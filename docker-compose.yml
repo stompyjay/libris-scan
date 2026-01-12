@@ -1,0 +1,67 @@
+services:
+  # 1. SERVICIO DE APLICACIÓN WEB (PHP-Apache)
+  web:
+    build:
+      context: ./docker/php
+    container_name: libris-scan-apache
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - "80:80"
+    environment:
+      COMPOSER_PROCESS_TIMEOUT: 0
+    depends_on:
+      - db
+    networks:
+      - libris-scan_network
+
+  # 2. SERVICIO DE BASE DE DATOS (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: libris-scan-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_segura
+      MYSQL_DATABASE: laravel_db
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - libris-scan_network
+
+  # 3. SERVICIO DE GESTIÓN (phpMyAdmin)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: libris-scan-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    depends_on:
+      - db
+    networks:
+      - libris-scan_network
+
+  # 4. SERVICIO DE NODE (Vite)
+  node:
+    image: node:22
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+    networks:
+      - libris-scan_network
+
+# ----------------------------------------------------
+# DEFINICIÓN GLOBAL DE REDES Y VOLÚMENES
+# ----------------------------------------------------
+networks:
+  libris-scan_network: # Ahora el nombre coincide con el de los servicios
+    driver: bridge
+
+volumes:
+  dbdata: # Definición correcta del volumen persistente

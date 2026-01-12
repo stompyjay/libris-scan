@@ -1,0 +1,30 @@
+FROM php:8.3-apache
+
+# Instala dependencias de PHP y utilidades necesarias
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    libzip-dev \
+    libpng-dev \
+    curl \
+    gnupg \
+    && docker-php-ext-install zip pdo_mysql
+
+# Añade el repositorio oficial de Node.js 22.x
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+
+# Instala Node.js
+RUN apt-get install -y nodejs
+
+# Actualiza NPM globalmente
+RUN npm install -g npm@latest
+
+# Copia la configuración de Apache
+COPY ./apache.conf /etc/apache2/sites-available/000-default.conf
+RUN a2enmod rewrite
+
+# ✅ Instala Composer (esto es lo que te faltaba)
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Establece el directorio de trabajo
+WORKDIR /var/www/html
