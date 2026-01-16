@@ -11,11 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
+        Schema::create('profiles', function (Blueprint $table) {
             $table->id();
-            // IMPORTANTE: 'unique' para que firstOrCreate funcione bien y no duplique
+            
+            // Muy bien el uso de unique() para garantizar integridad
+            // y permitir el uso seguro de firstOrCreate.
             $table->string('name')->unique(); 
-            $table->text('description')->nullable(); // Opcional, por si quieres añadir notas
+            
+            $table->text('description')->nullable(); 
             $table->timestamps();
         });
     }
@@ -25,6 +28,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('categories');
+        // Asegúrate de que coincida con el nombre en Schema::create
+        Schema::dropIfExists('profiles'); 
     }
 };

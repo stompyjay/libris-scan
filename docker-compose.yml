@@ -1,67 +1,48 @@
+version: '3.8'
+
 services:
-  # 1. SERVICIO DE APLICACIÓN WEB (PHP-Apache)
-  web:
-    build:
-      context: ./docker/php
-    container_name: libris-scan-apache
-    restart: unless-stopped
-    volumes:
-      - ./src:/var/www/html
+  proxy:
+    image: nginx:alpine
     ports:
       - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./backend:/var/www
+    depends_on:
+      - frontend
+      - backend
+
+  frontend:
+    build: ./frontend
+    container_name: libris_frontend
+
+  backend:
+    build: ./backend
+    container_name: libris_backend
+    volumes:
+      - ./backend:/var/www
+      - /var/www/vendor  # <--- ESTA ES LA LÍNEA NUEVA
     environment:
-      COMPOSER_PROCESS_TIMEOUT: 0
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: libris_db
+      DB_USERNAME: libris_user
+      DB_PASSWORD: libris_password
     depends_on:
       - db
-    networks:
-      - libris-scan_network
 
-  # 2. SERVICIO DE BASE DE DATOS (MySQL)
   db:
     image: mysql:8.0
-    container_name: libris-scan-mysql
-    restart: unless-stopped
+    container_name: libris_db
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root_password_segura
-      MYSQL_DATABASE: laravel_db
+      MYSQL_DATABASE: libris_db
+      MYSQL_USER: libris_user
+      MYSQL_PASSWORD: libris_password
+      MYSQL_ROOT_PASSWORD: root
     volumes:
-      - dbdata:/var/lib/mysql
-    networks:
-      - libris-scan_network
-
-  # 3. SERVICIO DE GESTIÓN (phpMyAdmin)
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: libris-scan-phpmyadmin
-    restart: unless-stopped
-    ports:
-      - "8082:80"
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-    depends_on:
-      - db
-    networks:
-      - libris-scan_network
-
-  # 4. SERVICIO DE NODE (Vite)
-  node:
-    image: node:22
-    working_dir: /var/www/html
-    volumes:
-      - ./src:/var/www/html
-    ports:
-      - "5173:5173"
-    command: sh -c "npm install && npm run dev -- --host"
-    networks:
-      - libris-scan_network
-
-# ----------------------------------------------------
-# DEFINICIÓN GLOBAL DE REDES Y VOLÚMENES
-# ----------------------------------------------------
-networks:
-  libris-scan_network: # Ahora el nombre coincide con el de los servicios
-    driver: bridge
+      - db_data:/var/lib/mysql
 
 volumes:
-  dbdata: # Definición correcta del volumen persistente
+  db_data:
