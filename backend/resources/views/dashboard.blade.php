@@ -10,6 +10,17 @@
     
     <style>
         body { font-family: 'Inter', sans-serif; }
+        
+        /* Animación para la luz del escáner */
+        @keyframes scan-animation {
+            0%, 100% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .animate-scan {
+            animation: scan-animation 2s ease-in-out infinite;
+        }
     </style>
 </head>
 <body class="bg-[#12141c] text-white min-h-screen">
@@ -43,20 +54,39 @@
 
     <main class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-            <div>
-                <h1 class="text-3xl font-bold">Mi Librería</h1>
-                <p class="text-gray-400 mt-1">Gestiona tu colección digital.</p>
-            </div>
-            
-            {{-- AQUI ESTA EL CAMBIO: Ahora usamos 'a' y route('books.search') --}}
-            <a href="{{ route('books.search') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-blue-600/20 flex items-center gap-2 transition transform hover:scale-105">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Escanear Nuevo Libro
-            </a>
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold">Mi Librería</h1>
+            <p class="text-gray-400 mt-1">Gestiona tu colección digital.</p>
+        </div>
 
+        <div class="bg-[#1e2130] rounded-2xl border border-gray-800 p-8 mb-10 text-center relative overflow-hidden shadow-2xl">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 opacity-50"></div>
+            
+            <h2 class="text-2xl font-bold mb-2">Escanear Nuevo Libro</h2>
+            <p class="text-gray-400 mb-8 max-w-lg mx-auto">Utiliza la cámara de tu dispositivo o introduce el código manualmente para añadir un libro a tu colección.</p>
+
+            <div class="flex flex-col md:flex-row justify-center items-center gap-8">
+                
+                <div class="relative w-64 h-40 bg-[#12141c] rounded-xl border-2 border-dashed border-gray-600 flex items-center justify-center group hover:border-blue-500 transition-colors cursor-pointer">
+                    <div class="absolute top-0 left-0 w-full h-0.5 bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,1)] animate-scan"></div>
+                    
+                    <div class="text-gray-500 flex flex-col items-center group-hover:text-blue-400 transition">
+                        <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                        <span class="text-sm font-mono font-bold">ACTUALIZAR CÁMARA</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3 w-full md:w-auto">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Activar Escáner
+                    </button>
+                    <button class="bg-[#2a2e3f] hover:bg-[#32374b] text-white font-medium py-3 px-8 rounded-xl transition border border-gray-700 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Entrada Manual
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
