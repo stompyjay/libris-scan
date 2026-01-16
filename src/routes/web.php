@@ -3,47 +3,98 @@
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AuthorController;
-use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\ProfileController;
+use App\Models\Category; // <--- 1. NUEVO: Importamos el modelo
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BookSearchController; // <--- IMPORTANTE: Esto arriba del todo
 
+Route::get('/', function () {
+    return view('welcome');
+});
+
+// 2. NUEVO: Ruta Dashboard modificada para enviar datos
+Route::get('/dashboard', function () {
+    // Obtenemos las categorías para mostrarlas en el panel
+    $categories = Category::all(); 
+    return view('dashboard', compact('categories'));
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+
+// GRUPO DE RUTAS PROTEGIDAS (Solo usuarios logueados)
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // --- ENTIDAD 1: CATEGORÍAS (Relación 1:N) ---
-    // Listado (PD1)
+    // =================================================================
+    //  RELACIÓN 1:1 - GESTIÓN DE PERFIL
+    // =================================================================
+    
+    // Ver mi perfil
+    Route::get('/mi-perfil', [ProfileController::class, 'index'])->name('profile.index');
+
+    // Gestión (PD1) - Rutas de creación primero
+    Route::get('/mi-perfil/crear', [ProfileController::class, 'create'])->name('profile.create');
+    Route::post('/mi-perfil', [ProfileController::class, 'store'])->name('profile.store');
+
+    // Rutas con parámetros
+    Route::get('/mi-perfil/{profile}', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/mi-perfil/{profile}/editar', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/mi-perfil/{profile}', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/mi-perfil/{profile}', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+
+    // =================================================================
+    //  ENTIDAD 1: CATEGORÍAS (CategoryController)
+    // =================================================================
+    
     Route::get('/categorias', [CategoryController::class, 'index'])->name('categories.index');
-    // Ver Detalle de Entidad 1 (Muestra todos sus Libros - Requisito 2)
-    Route::get('/categorias/{id}', [CategoryController::class, 'show'])->name('categories.show');
-    // Gestión (PD1)
+
+    // IMPORTANTE: La ruta 'crear' DEBE ir antes que la ruta dinámica '{category}'
     Route::get('/categorias/crear', [CategoryController::class, 'create'])->name('categories.create');
     Route::post('/categorias', [CategoryController::class, 'store'])->name('categories.store');
-    Route::get('/categorias/{id}/editar', [CategoryController::class, 'edit'])->name('categories.edit');
-    Route::put('/categorias/{id}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categorias/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+
+    // Rutas que requieren un ID (Model Binding: {category} coincide con $category en el controller)
+    Route::get('/categorias/{category}', [CategoryController::class, 'show'])->name('categories.show');
+    Route::get('/categorias/{category}/editar', [CategoryController::class, 'edit'])->name('categories.edit');
+    Route::put('/categorias/{category}', [CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categorias/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
 
-    // --- ENTIDAD 2: LIBROS (Entidad Central) ---
-    // Listado con Filtro por Entidad 1 (Requisito 2 - Búsqueda)
+    // =================================================================
+    //  ENTIDAD 2: LIBROS (BookController)
+    // =================================================================
+    
     Route::get('/libros', [BookController::class, 'index'])->name('books.index');
-    // Detalle de Entidad 2 (Muestra su Categoría y sus Autores - Requisito 2 y 3)
-    Route::get('/libros/{id}', [BookController::class, 'show'])->name('books.show');
-    // Gestión (PD1)
+
+    // 'crear' antes que '{book}'
     Route::get('/libros/crear', [BookController::class, 'create'])->name('books.create');
     Route::post('/libros', [BookController::class, 'store'])->name('books.store');
-    Route::get('/libros/{id}/editar', [BookController::class, 'edit'])->name('books.edit');
-    Route::put('/libros/{id}', [BookController::class, 'update'])->name('books.update');
-    Route::delete('/libros/{id}', [BookController::class, 'destroy'])->name('books.destroy');
+
+    // Rutas dinámicas (Usamos {book})
+    Route::get('/libros/{book}', [BookController::class, 'show'])->name('books.show');
+    Route::get('/libros/{book}/editar', [BookController::class, 'edit'])->name('books.edit');
+    Route::put('/libros/{book}', [BookController::class, 'update'])->name('books.update');
+    Route::delete('/libros/{book}', [BookController::class, 'destroy'])->name('books.destroy');
 
 
-    // --- ENTIDAD 3: AUTORES (Relación N:M) ---
-    // Listado de Autores (Requisito 3 - Navegación)
+    // =================================================================
+    //  ENTIDAD 3: AUTORES (AuthorController)
+    // =================================================================
+    
     Route::get('/autores', [AuthorController::class, 'index'])->name('authors.index');
-    // Ver Detalle de Autor (Muestra todos sus libros asociados - Requisito 3)
-    Route::get('/autores/{id}', [AuthorController::class, 'show'])->name('authors.show');
-    // Gestión (PD1)
+
+    // 'crear' antes que '{author}'
     Route::get('/autores/crear', [AuthorController::class, 'create'])->name('authors.create');
     Route::post('/autores', [AuthorController::class, 'store'])->name('authors.store');
-    Route::get('/autores/{id}/editar', [AuthorController::class, 'edit'])->name('authors.edit');
-    Route::put('/autores/{id}', [AuthorController::class, 'update'])->name('authors.update');
-    Route::delete('/autores/{id}', [AuthorController::class, 'destroy'])->name('authors.destroy');
+
+    // Rutas dinámicas (Usamos {author})
+    Route::get('/autores/{author}', [AuthorController::class, 'show'])->name('authors.show');
+    Route::get('/autores/{author}/editar', [AuthorController::class, 'edit'])->name('authors.edit');
+    Route::put('/autores/{author}', [AuthorController::class, 'update'])->name('authors.update');
+    Route::delete('/autores/{author}', [AuthorController::class, 'destroy'])->name('authors.destroy');
+
+Route::get('/scan', [BookSearchController::class, 'index'])->name('books.search');
+Route::post('/scan', [BookSearchController::class, 'search'])->name('books.process');
+// Ruta para el filtro por categorías
+Route::get('/browse', [BookSearchController::class, 'browseByCategory'])->name('books.browse');
 
 });
 
