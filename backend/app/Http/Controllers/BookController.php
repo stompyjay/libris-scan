@@ -3,119 +3,109 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
-use App\Models\Category; // Necesario para pasar categorías a los formularios
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class BookController extends Controller
 {
     /**
-     * Muestra la lista de TUS libros.
+     * API: Obtener lista de libros del usuario (JSON)
      */
     public function index()
     {
-        // Obtenemos solo los libros del usuario conectado, paginados de 10 en 10
+        // Recuperamos los libros paginados (igual que antes)
         $books = Book::where('user_id', Auth::id())
                      ->orderBy('created_at', 'desc')
                      ->paginate(10);
 
-        return view('books.index', compact('books'));
+        // Devolvemos JSON directo
+        return response()->json($books);
     }
 
     /**
-     * Muestra el formulario para crear un libro manualmente (si no usas el escáner).
+     * NOTA: Se han eliminado create() y edit()
+     * Las APIs no sirven HTML (formularios), eso lo construye tu JavaScript en el frontend.
      */
-    public function create()
-    {
-        $categories = Category::all();
-        return view('books.create', compact('categories'));
-    }
 
     /**
-     * Guarda un libro nuevo en la base de datos.
+     * API: Guardar un libro nuevo
      */
     public function store(Request $request)
     {
-        // 1. Validamos que los datos vengan bien
+        // 1. Validación (La mantenemos igual)
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'author' => 'nullable|string|max:255',
+            'title'       => 'required|string|max:255',
+            'author'      => 'nullable|string|max:255',
             'category_id' => 'nullable|exists:categories,id',
             'description' => 'nullable|string',
-            'status' => 'required|in:pending,reading,completed,borrowed',
+            'status'      => 'required|in:pending,reading,completed,borrowed',
         ]);
 
-        // 2. Creamos el libro vinculado al usuario actual
-        // Al usar $request->user()->books()->create(...), Laravel rellena el user_id solo
-        $request->user()->books()->create($validated);
+        // 2. Creación vinculada al usuario
+        $book = $request->user()->books()->create($validated);
 
-        return redirect()->route('dashboard')->with('success', 'Libro añadido correctamente.');
+        // 3. Respuesta JSON (Código 201 = Created)
+        return response()->json([
+            'message' => 'Libro creado correctamente',
+            'book'    => $book
+        ], 201);
     }
 
     /**
-     * Muestra los detalles de un libro específico.
+     * API: Ver un solo libro
      */
     public function show(Book $book)
     {
-        // Seguridad: Verificar que el libro es del usuario
+        // Seguridad: Verificar dueño
         if ($book->user_id !== Auth::id()) {
-            abort(403, 'No tienes permiso para ver este libro.');
+            return response()->json(['error' => 'No autorizado'], 403);
         }
 
-        return view('books.show', compact('book'));
+        return response()->json($book);
     }
 
     /**
-     * Muestra el formulario para editar un libro.
-     */
-    public function edit(Book $book)
-    {
-        // Seguridad
-        if ($book->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $categories = Category::all();
-        return view('books.edit', compact('book', 'categories'));
-    }
-
-    /**
-     * Actualiza los datos del libro en la base de datos.
+     * API: Actualizar libro
      */
     public function update(Request $request, Book $book)
     {
         // Seguridad
         if ($book->user_id !== Auth::id()) {
-            abort(403);
+            return response()->json(['error' => 'No autorizado'], 403);
         }
 
         // Validación
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'author' => 'nullable|string|max:255',
+            'title'       => 'required|string|max:255',
+            'author'      => 'nullable|string|max:255',
             'category_id' => 'nullable|exists:categories,id',
-            'status' => 'required|in:pending,reading,completed,borrowed',
+            'status'      => 'required|in:pending,reading,completed,borrowed',
             'description' => 'nullable|string',
         ]);
 
         // Actualizar
         $book->update($validated);
 
-        return redirect()->route('dashboard')->with('success', 'Libro actualizado correctamente.');
+        // Devolvemos el libro actualizado
+        return response()->json([
+            'message' => 'Libro actualizado',
+            'book'    => $book
+        ]);
     }
 
     /**
-     * Elimina el libro de la base de datos.
+     * API: Eliminar libro
      */
     public function destroy(Book $book)
     {
-        // Seguridad: Solo el dueño puede borrarlo
+        // Seguridad
         if ($book->user_id !== Auth::id()) {
-            abort(403);
+            return response()->json(['error' => 'No autorizado'], 403);
         }
 
         $book->delete();
 
-        return redirect()->route('dashboard')->with('success', 'Libro eliminado.');
+        // Código 204 = No Content (Operación exitosa, sin contenido que devolver)
+        return response()->json(null, 204);
     }
 }

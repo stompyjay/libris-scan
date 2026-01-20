@@ -4,10 +4,11 @@ services:
   proxy:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./backend/public:/var/www/public
+      - ./frontend:/var/www/frontend
     depends_on:
       - frontend
       - backend

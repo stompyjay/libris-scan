@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escanear Libros - Biblioteca</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="bg-blue-600 p-4 text-white shadow-md mb-8">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="dashboard.html" class="font-bold hover:underline">⬅ Volver al Dashboard</a>
+            <h1 class="text-xl font-bold">🔍 Buscador Inteligente</h1>
+            <div></div> </div>
+    </nav>
+
+    <div class="container mx-auto px-4 max-w-5xl">
+        
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8 text-center">
+            <h2 class="text-2xl font-bold mb-4 text-gray-700">Encuentra tu próximo libro</h2>
+            <div class="flex gap-2 justify-center">
+                <input type="text" id="search-query" 
+                       class="w-full max-w-lg p-3 border rounded-lg shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="Escribe el título (ej: Harry Potter, Dune...)"
+                       onkeypress="if(event.key === 'Enter') searchBooks()">
+                
+                <button onclick="searchBooks()" 
+                        class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow">
+                    Buscar
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Tecnología powered by OpenLibrary API</p>
+        </div>
+
+        <div id="results-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            </div>
+
+        <div id="loading" class="hidden text-center py-10">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Consultando librerías del mundo...</p>
+        </div>
+
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        checkAuth(); // Seguridad
+
+        // Variable global para almacenar lo que encontremos
+        let currentResults = [];
+
+        // FUNCIÓN 1: Buscar en la API
+        async function searchBooks() {
+            const query = document.getElementById('search-query').value;
+            const resultsGrid = document.getElementById('results-grid');
+            const loading = document.getElementById('loading');
+
+            if (!query) return alert("Escribe algo primero");
+
+            // UI: Mostrar carga, limpiar resultados previos
+            loading.classList.remove('hidden');
+            resultsGrid.innerHTML = '';
+
+            try {
+                // Hacemos GET a tu backend Laravel
+                const response = await fetch(`${API_URL}/scan?query=${encodeURIComponent(query)}`, {
+                    headers: getAuthHeaders()
+                });
+
+                const books = await response.json();
+                
+                // Guardamos los libros en la variable global para usarlos al guardar
+                currentResults = books;
+
+                loading.classList.add('hidden');
+
+                if (books.length === 0) {
+                    resultsGrid.innerHTML = `<p class="col-span-full text-center text-gray-500">No encontramos nada. Prueba con otro nombre.</p>`;
+                    return;
+                }
+
+                // Generar HTML para cada libro
+                books.forEach((book, index) => {
+                    // Si tiene ID de portada, construimos la URL de OpenLibrary, si no, imagen gris
+                    const coverUrl = book.cover_id 
+                        ? `https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`
+                        : 'https://via.placeholder.com/150x220?text=Sin+Portada';
+
+                    const card = `
+                        <div class="bg-white rounded-lg shadow hover:shadow-xl transition overflow-hidden flex flex-col h-full border border-gray-100">
+                            <div class="h-48 bg-gray-200 flex justify-center items-center overflow-hidden">
+                                <img src="${coverUrl}" alt="Portada" class="h-full object-cover">
+                            </div>
+                            <div class="p-4 flex-1 flex flex-col">
+                                <h3 class="font-bold text-lg text-gray-800 leading-tight mb-1">${book.title}</h3>
+                                <p class="text-sm text-gray-600 mb-2">Autor: ${book.author}</p>
+                                <p class="text-xs text-gray-400 mb-4">Año: ${book.year || 'N/D'} | Cat: ${book.suggested_category}</p>
+                                
+                                <button id="btn-${index}" onclick="saveBook(${index})" 
+                                        class="mt-auto w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition font-semibold">
+                                    + Añadir a mi lista
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    resultsGrid.innerHTML += card;
+                });
+
+            } catch (error) {
+                console.error(error);
+                loading.classList.add('hidden');
+                alert("Error conectando con el servidor");
+            }
+        }
+
+        // FUNCIÓN 2: Guardar un libro específico
+        async function saveBook(index) {
+            // Recuperamos el objeto libro del array global usando el índice
+            const bookToSave = currentResults[index];
+            const btn = document.getElementById(`btn-${index}`);
+
+            // Feedback visual inmediato
+            btn.textContent = "Guardando...";
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                // Hacemos POST a tu backend
+                // NOTA: Tu backend espera 'search' como ruta POST según lo configuramos, 
+                // pero actúa como Store.
+                const response = await fetch(`${API_URL}/scan`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        title: bookToSave.title,
+                        author: bookToSave.author,
+                        suggested_category: bookToSave.suggested_category
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.status === 201) {
+                    btn.textContent = "✔ Guardado";
+                    btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                    btn.classList.add('bg-gray-500'); // Cambiar a gris para indicar que ya está
+                    
+                    // Opcional: Mostrar una alerta bonita o notificación
+                    // alert(`Libro guardado en categoría: ${data.book.category_id}`);
+                } else {
+                    btn.textContent = "Error";
+                    btn.disabled = false;
+                    alert("Error: " + (data.message || "No se pudo guardar"));
+                }
+
+            } catch (error) {
+                console.error(error);
+                btn.textContent = "Reintentar";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

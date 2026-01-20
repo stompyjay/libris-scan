@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorías - Biblioteca</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="bg-blue-600 p-4 text-white shadow-md mb-8">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="dashboard.html" class="font-bold hover:underline">⬅ Volver al Dashboard</a>
+            <h1 class="text-xl font-bold">🏷️ Gestión de Categorías</h1>
+            <button onclick="openModal('create')" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded text-sm font-bold transition shadow">
+                + Nueva Categoría
+            </button>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 max-w-4xl">
+        
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full leading-normal">
+                <thead>
+                    <tr>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Nombre
+                        </th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Descripción
+                        </th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="categories-table-body">
+                    <tr><td colspan="3" class="text-center p-4">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="category-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full flex items-center justify-center">
+        <div class="bg-white p-5 border w-96 shadow-lg rounded-md relative">
+            
+            <h3 id="modal-title" class="text-xl font-bold mb-4">Nueva Categoría</h3>
+            
+            <form id="category-form">
+                <input type="hidden" id="cat-id"> <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Nombre</label>
+                    <input type="text" id="cat-name" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Descripción</label>
+                    <textarea id="cat-desc" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancelar</button>
+                    <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 font-bold">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        checkAuth();
+
+        const tableBody = document.getElementById('categories-table-body');
+        const modal = document.getElementById('category-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const catIdInput = document.getElementById('cat-id');
+        const catNameInput = document.getElementById('cat-name');
+        const catDescInput = document.getElementById('cat-desc');
+
+        // 1. CARGAR CATEGORÍAS (GET)
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${API_URL}/categorias`, { headers: getAuthHeaders() });
+                const categories = await response.json(); // Recuerda que en el controller usamos get(), no paginate()
+
+                tableBody.innerHTML = '';
+
+                if(categories.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-4">No hay categorías. ¡Crea una!</td></tr>';
+                    return;
+                }
+
+                categories.forEach(cat => {
+                    const row = `
+                        <tr>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm font-bold">
+                                ${cat.name}
+                            </td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-gray-600">
+                                ${cat.description || '-'}
+                            </td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
+                                <button onclick="openModal('edit', ${cat.id}, '${cat.name}', '${cat.description || ''}')" 
+                                        class="text-blue-600 hover:text-blue-900 mr-3">Editar</button>
+                                <button onclick="deleteCategory(${cat.id})" 
+                                        class="text-red-600 hover:text-red-900">Borrar</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+
+            } catch (error) {
+                console.error(error);
+                tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-red-500">Error cargando datos</td></tr>';
+            }
+        }
+
+        // 2. ABRIR Y CERRAR MODAL
+        function openModal(mode, id = null, name = '', desc = '') {
+            modal.classList.remove('hidden');
+            if (mode === 'edit') {
+                modalTitle.textContent = 'Editar Categoría';
+                catIdInput.value = id;
+                catNameInput.value = name;
+                catDescInput.value = desc;
+            } else {
+                modalTitle.textContent = 'Nueva Categoría';
+                document.getElementById('category-form').reset();
+                catIdInput.value = ''; // ID vacío significa CREAR
+            }
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+
+        // 3. GUARDAR (POST o PUT)
+        document.getElementById('category-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = catIdInput.value;
+            const name = catNameInput.value;
+            const description = catDescInput.value;
+            
+            // Si hay ID, es EDITAR (PUT), si no, es CREAR (POST)
+            const isEdit = !!id;
+            const url = isEdit ? `${API_URL}/categorias/${id}` : `${API_URL}/categorias`;
+            const method = isEdit ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ name, description })
+                });
+
+                if (response.ok) {
+                    closeModal();
+                    loadCategories(); // Recargar la tabla
+                } else {
+                    const data = await response.json();
+                    alert("Error: " + (data.message || "Revisa los datos (nombre duplicado?)"));
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error de conexión");
+            }
+        });
+
+        // 4. BORRAR (DELETE)
+        async function deleteCategory(id) {
+            if(!confirm('¿Seguro que quieres borrar esta categoría?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/categorias/${id}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok || response.status === 204) {
+                    loadCategories();
+                } else {
+                    alert('Error al borrar (¿Quizás tiene libros asociados?)');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // Cargar al inicio
+        loadCategories();
+
+    </script>
+</body>
+</html>

@@ -4,91 +4,116 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http; 
+use Illuminate\Support\Facades\Auth;
 use App\Models\Category;
-use App\Models\Book; // <--- Asegúrate de tener un modelo Book o comenta esto
+use App\Models\Book; 
 
 class BookSearchController extends Controller
 {
-    // FUNCIÓN 1: Mostrar la pantalla
-    public function index()
-    {
-        return view('books.search');
-    }
-
-    // FUNCIÓN 2: Buscar por texto y guardar
-    public function search(Request $request)
+    /**
+     * API: Buscar libros en OpenLibrary
+     * Método: GET /api/scan?query=Harry+Potter
+     */
+    public function index(Request $request)
     {
         $query = $request->input('query');
+
+        if (!$query) {
+            return response()->json(['error' => 'Por favor escribe algo para buscar.'], 400);
+        }
         
         // 1. Preguntamos a Internet (Open Library)
-        $response = Http::get("https://openlibrary.org/search.json?q=" . $query);
+        $response = Http::get("https://openlibrary.org/search.json?q=" . $query . "&limit=10");
         $data = $response->json();
 
-        // 2. Si encontramos el libro...
+        // 2. Procesamos los resultados para limpiarlos antes de enviarlos al Frontend
+        $books = [];
         if (!empty($data['docs'])) {
-            $bookData = $data['docs'][0];
-            
-            // 3. Decidimos la categoría automática
-            $categoryName = 'General';
-            if (isset($bookData['subject']) && count($bookData['subject']) > 0) {
-                $categoryName = $bookData['subject'][0]; 
+            foreach ($data['docs'] as $doc) {
+                // Filtramos para que solo lleguen datos útiles
+                $books[] = [
+                    'title'       => $doc['title'] ?? 'Sin título',
+                    'author'      => $doc['author_name'][0] ?? 'Desconocido',
+                    'year'        => $doc['first_publish_year'] ?? null,
+                    'cover_id'    => $doc['cover_i'] ?? null, // ID para buscar la portada luego
+                    // Sugerimos una categoría basada en el primer "subject"
+                    'suggested_category' => $doc['subject'][0] ?? 'General'
+                ];
             }
-
-            // 4. Creamos la categoría si no existe
-            $category = Category::firstOrCreate(
-                ['name' => $categoryName], 
-                ['description' => 'Categoría automática'] 
-            );
-
-            // AQUÍ GUARDARÍAMOS EL LIBRO (Descomenta cuando tengas el modelo Book)
-            /*
-            Book::create([
-                'title' => $bookData['title'],
-                'author' => $bookData['author_name'][0] ?? 'Desconocido',
-                'category_id' => $category->id,
-                'user_id' => auth()->id(),
-            ]);
-            */
-
-            return redirect()->route('dashboard')->with('success', '¡Libro detectado! Categoría creada: ' . $categoryName);
         }
 
-        return back()->with('error', 'No hemos encontrado ese libro. Prueba con otro nombre.');
+        return response()->json($books);
     }
 
-    // FUNCIÓN 3: Explorar por Categoría (Esta debe ir fuera de search)
+    /**
+     * API: Guardar un libro seleccionado del escáner
+     * Método: POST /api/scan
+     * Este método hace la MAGIA de crear la categoría si no existe.
+     */
+    public function search(Request $request) // Nota: En tus rutas lo llamaste 'search', aquí actúa como guardar
+    {
+        // 1. Validamos los datos que nos envía el Frontend
+        $request->validate([
+            'title' => 'required|string',
+            'author' => 'nullable|string',
+            'suggested_category' => 'nullable|string'
+        ]);
+
+        // 2. Lógica de Categoría Automática
+        $categoryName = $request->input('suggested_category', 'General');
+        
+        // Buscamos la categoría, si no existe, la creamos al vuelo
+        $category = Category::firstOrCreate(
+            ['name' => $categoryName], 
+            ['description' => 'Categoría importada automáticamente'] 
+        );
+
+        // 3. Guardamos el libro
+        $book = Book::create([
+            'title'       => $request->input('title'),
+            'author'      => $request->input('author'),
+            'category_id' => $category->id, // Usamos el ID de la categoría (nueva o existente)
+            'description' => 'Importado desde OpenLibrary',
+            'status'      => 'pending', // Por defecto 'pendiente'
+            'user_id'     => Auth::id(),
+        ]);
+
+        return response()->json([
+            'message' => '¡Libro guardado con éxito!',
+            'category_created' => $category->wasRecentlyCreated, // Booleano para saber si se creó nueva
+            'book' => $book
+        ], 201);
+    }
+
+    /**
+     * API: Explorar por Categoría (OpenLibrary Subjects)
+     * Método: GET /api/browse?category=fantasy
+     */
     public function browseByCategory(Request $request)
     {
-        $category = $request->input('category'); // Ej: 'fantasy', 'romance'
+        $category = $request->input('category'); 
 
-        // Si no han elegido nada, volvemos atrás
         if (!$category) {
-            return back();
+            return response()->json(['error' => 'Falta la categoría'], 400);
         }
 
-        // Consultamos la API de Temas (Subjects)
+        // Consultamos la API de Temas
         $response = Http::get("https://openlibrary.org/subjects/" . strtolower($category) . ".json?limit=12");
         $data = $response->json();
 
         $books = [];
 
-        // Procesamos los resultados para que la vista los entienda
         if (isset($data['works'])) {
             foreach ($data['works'] as $work) {
                 $books[] = [
-                    'title' => $work['title'],
-                    'author' => $work['authors'][0]['name'] ?? 'Desconocido',
-                    'cover_id' => $work['cover_id'] ?? null,
-                    // Guardamos el subject original para usarlo si deciden guardar el libro
-                    'subject' => $category 
+                    'title'     => $work['title'],
+                    'author'    => $work['authors'][0]['name'] ?? 'Desconocido',
+                    'cover_id'  => $work['cover_id'] ?? null,
+                    'suggested_category' => ucfirst($category) 
                 ];
             }
         }
 
-        // Reutilizamos la vista de búsqueda pero le pasamos los libros encontrados
-        return view('books.search', [
-            'books' => $books, 
-            'selectedCategory' => ucfirst($category)
-        ]);
+        return response()->json($books);
     }
 }
