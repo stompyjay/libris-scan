@@ -9,79 +9,47 @@ use Illuminate\Support\Facades\Auth;
 class ProfileController extends Controller
 {
     /**
-     * Muestra los datos del perfil (Relación 1:1).
-     * MEJORA: Si el perfil no existe, lo crea vacío para evitar errores.
+     * API: Obtener datos del perfil
+     * URL: GET /api/profile
      */
     public function index()
     {
-        // Intenta obtener el perfil. Si es null (no existe), crea uno nuevo vacío.
-        $profile = Auth::user()->profile ?: Auth::user()->profile()->create([
+        $user = Auth::user();
+
+        // Si no tiene perfil, lo creamos vacío al vuelo
+        $profile = $user->profile ?: $user->profile()->create([
             'nombre' => '',
             'apellido' => '',
             'telefono' => '',
         ]);
 
-        return view('user-profile.index', compact('profile'));
+        // Devolvemos JSON para que tu profile.html lo lea
+        return response()->json($profile);
     }
 
     /**
-     * Formulario de edición (Requisito B.1).
+     * API: Actualizar perfil
+     * URL: PUT /api/profile
      */
-    public function edit(Profile $profile)
+    public function update(Request $request)
     {
-        // SEGURIDAD: Verifica que el usuario solo edite SU propio perfil
-        if ($profile->user_id !== Auth::id()) {
-            abort(403, 'No tienes permiso para editar este perfil.');
-        }
+        $user = Auth::user();
+        $profile = $user->profile;
 
-        return view('user-profile.edit', compact('profile'));
-    }
-
-    /**
-     * Actualiza Nombre, Apellido y Teléfono (Requisito B.1).
-     */
-    public function update(Request $request, Profile $profile)
-    {
-        // 1. Validar datos
-        $request->validate([
-            'nombre' => 'required|string|max:255',
+        // 1. Validar
+        $validated = $request->validate([
+            'nombre'   => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
             'telefono' => 'required|string|max:20',
         ]);
 
-        // 2. SEGURIDAD: Verificar propiedad de nuevo antes de guardar
-        if ($profile->user_id !== Auth::id()) {
-            abort(403);
-        }
+        // 2. Actualizar
+        $profile->update($validated);
 
-        // 3. Actualizar
-        $profile->update($request->only(['nombre', 'apellido', 'telefono']));
-
-        // 4. Redirigir (Asegúrate de que esta ruta existe en web.php)
-        return redirect()->route('profile.index')->with('success', 'Perfil actualizado correctamente.');
-    }
-
-    /**
-     * --- MÉTODOS REQUERIDOS POR PD1 (Aunque no se usen, deben existir) ---
-     */
-
-    public function create()
-    {
-        // PD1: Método existente vacío
-    }
-
-    public function store(Request $request)
-    {
-        // PD1: Método existente vacío
-    }
-
-    public function show(Profile $profile)
-    {
-        // PD1: Método existente vacío
-    }
-
-    public function destroy(Profile $profile)
-    {
-        // PD1: Método existente vacío
+        // 3. Responder con JSON (mensaje de éxito)
+        return response()->json([
+            'message' => 'Perfil actualizado correctamente',
+            'profile' => $profile
+        ]);
     }
 }

@@ -83,19 +83,19 @@ class CategoryController extends Controller
      * API: Eliminar categoría
      * Método: DELETE /api/categorias/{id}
      */
-    public function destroy(Category $category)
+   public function destroy(Category $category)
     {
-        // Opcional: Validación extra
-        // Si tienes la relación definida en el modelo, podrías descomentar esto:
-        /*
+        // 1. SEGURIDAD: Verificar si hay libros usando esta categoría
+        // Asegúrate de tener 'public function books()' en tu modelo Category
         if ($category->books()->count() > 0) {
-             return response()->json(['error' => 'No puedes borrar una categoría con libros.'], 409);
+             return response()->json([
+                 'message' => 'No puedes borrar esta categoría porque tiene libros asociados.'
+             ], 409); // 409 = Conflict
         }
-        */
 
+        // 2. Si está vacía, la borramos
         $category->delete();
 
-        // 204 No Content
         return response()->json(null, 204);
     }
 }

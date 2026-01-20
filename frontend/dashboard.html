@@ -1,204 +1,348 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard - Libris-Scan</title>
-    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Librería - Completa</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        
-        @keyframes scan-animation {
-            0%, 100% { top: 0%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
+        /* FONDO OSCURO */
+        body { background-color: #121214; color: #ffffff; font-family: 'Inter', sans-serif; }
+
+        /* BUSCADOR */
+        .search-container { background-color: #eaddff; border-radius: 16px; }
+
+        /* TABS (BOTONES CATEGORÍAS) */
+        .tab-btn { border-radius: 9999px; padding: 8px 20px; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; cursor: pointer; }
+        .tab-active { background-color: #1d9bf0; color: white; box-shadow: 0 4px 15px rgba(29, 155, 240, 0.4); }
+        .tab-inactive { background-color: #202024; color: #71717a; border: 1px solid #3f3f46; }
+        .tab-inactive:hover { background-color: #27272a; color: white; }
+
+        /* TARJETAS DE LIBROS */
+        .book-card {
+            background-color: white;
+            color: #1f2937;
+            border-radius: 20px;
+            overflow: hidden;
+            transition: transform 0.2s;
+            min-width: 180px;
+            max-width: 180px;
+            scroll-snap-align: start;
         }
-        .animate-scan {
-            animation: scan-animation 2s ease-in-out infinite;
+        .book-card:hover { transform: translateY(-5px); }
+
+        /* OCULTAR SCROLL */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* FLECHAS DE NAVEGACIÓN */
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background-color: #e65505;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: background 0.3s, transform 0.2s;
+            border: 2px solid #121214;
         }
+        .nav-arrow:hover { background-color: #ff6b1a; transform: translateY(-50%) scale(1.1); }
+        .nav-left { left: -15px; }
+        .nav-right { right: -15px; }
+
+        /* MODAL */
+        .btn-orange { background-color: #e65505; color: white; }
+        .btn-outline-orange { border: 1px solid #e65505; color: #e65505; }
     </style>
 </head>
-<body class="bg-[#12141c] text-white min-h-screen">
+<body class="min-h-screen pb-20 overflow-x-hidden">
 
-    <nav class="border-b border-gray-800 bg-[#1a1d29]">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                
-                <div class="flex items-center gap-3">
-                    <div class="bg-blue-600 p-2 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                        </svg>
-                    </div>
-                    <span class="font-bold text-lg tracking-tight">Libris-Scan</span>
-                </div>
-
-                <div class="hidden md:flex items-center space-x-6">
-                    <a href="dashboard.html" class="text-white font-medium border-b-2 border-blue-500 pb-1">Inicio</a>
-                    <a href="books.html" class="text-gray-400 hover:text-white transition">Mis Libros</a>
-                    <a href="categories.html" class="text-gray-400 hover:text-white transition">Categorías</a>
-                    <a href="profile.html" class="text-gray-400 hover:text-white transition">Mi Perfil</a>
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <span class="text-gray-400 text-sm hidden sm:block">Hola, <span id="user-name">Usuario</span></span>
-                    
-                    <a href="/logout-manual" class="bg-gray-800 hover:bg-red-900/50 text-gray-300 hover:text-red-400 px-3 py-1.5 rounded-lg text-sm font-medium transition border border-gray-700">
-                        Salir
-                    </a>
-                </div>
+    <header class="pt-6 pb-2 px-4 container mx-auto max-w-6xl">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl">👤</div>
+            <div>
+                <h1 class="font-bold text-lg">Hola, Lector</h1>
+                <p class="text-xs text-gray-400">Tu biblioteca personal</p>
             </div>
+            <button onclick="logout()" class="ml-auto text-gray-400 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
         </div>
-        
-        <div class="md:hidden flex justify-around p-2 bg-[#151722] border-t border-gray-800">
-            <a href="books.html" class="text-sm text-gray-400 hover:text-blue-400">Libros</a>
-            <a href="scan.html" class="text-sm text-gray-400 hover:text-blue-400">Escanear</a>
-            <a href="categories.html" class="text-sm text-gray-400 hover:text-blue-400">Categorías</a>
+
+        <div class="search-container flex items-center px-4 py-3 shadow-sm mx-auto w-full relative">
+            <i class="fas fa-search text-gray-500 text-lg"></i>
+            <input type="text" id="searchInput" class="bg-transparent border-none outline-none text-gray-800 placeholder-gray-500 ml-3 w-full font-medium" placeholder="Buscar en la librería...">
+        </div>
+    </header>
+
+    <nav class="container mx-auto px-4 max-w-6xl mt-4">
+        <div class="flex gap-3 overflow-x-auto pb-2 hide-scroll">
+            <button onclick="switchTab('Todos')" id="tab-Todos" class="tab-btn tab-active whitespace-nowrap">Todo</button>
+            <button onclick="switchTab('Ficción')" id="tab-Ficción" class="tab-btn tab-inactive whitespace-nowrap">Ficción</button>
+            <button onclick="switchTab('No Ficción')" id="tab-No Ficción" class="tab-btn tab-inactive whitespace-nowrap">No Ficción</button>
+            <button onclick="switchTab('Cómic')" id="tab-Cómic" class="tab-btn tab-inactive whitespace-nowrap">Cómic</button>
         </div>
     </nav>
 
-    <main id="main-content" class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold">Panel de Control</h1>
-            <p class="text-gray-400 mt-1">Bienvenido a tu colección digital.</p>
-        </div>
-
-        <div class="bg-[#1e2130] rounded-2xl border border-gray-800 p-8 mb-10 text-center relative overflow-hidden shadow-2xl">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 opacity-50"></div>
-            
-            <h2 class="text-2xl font-bold mb-2">Escanear Nuevo Libro</h2>
-            <p class="text-gray-400 mb-8 max-w-lg mx-auto">Utiliza la API de OpenLibrary para buscar portadas y detalles automáticamente.</p>
-
-            <div class="flex flex-col md:flex-row justify-center items-center gap-8">
-                
-                <a href="scan.html" class="relative w-64 h-40 bg-[#12141c] rounded-xl border-2 border-dashed border-gray-600 flex items-center justify-center group hover:border-blue-500 transition-colors cursor-pointer">
-                    <div class="absolute top-0 left-0 w-full h-0.5 bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,1)] animate-scan"></div>
-                    <div class="text-gray-500 flex flex-col items-center group-hover:text-blue-400 transition">
-                        <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                        <span class="text-sm font-mono font-bold">IR AL ESCÁNER</span>
-                    </div>
+    <div class="container mx-auto px-4 max-w-6xl mt-6">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[24px] p-6 flex items-center justify-between relative overflow-hidden shadow-lg shadow-blue-900/50">
+            <div class="z-10">
+                <h2 class="text-xl font-bold text-white mb-1">Escanear Libro</h2>
+                <p class="text-blue-100 text-xs mb-3">Añade rápido con la cámara</p>
+                <a href="scan.html" class="bg-white text-blue-600 text-xs font-bold px-4 py-2 rounded-full shadow-md hover:bg-gray-100 transition">
+                    <i class="fas fa-barcode mr-1"></i> Cámara
                 </a>
-
-                <div class="flex flex-col gap-3 w-full md:w-auto">
-                    <a href="scan.html" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        Buscar Libros
-                    </a>
-                    <a href="books.html" class="bg-[#2a2e3f] hover:bg-[#32374b] text-white font-medium py-3 px-8 rounded-xl transition border border-gray-700 flex items-center justify-center gap-2">
-                        Ver mi Lista
-                    </a>
-                </div>
             </div>
+            <i class="fas fa-book text-8xl text-white opacity-10 absolute -right-4 -bottom-4 rotate-12"></i>
         </div>
+    </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-            <div onclick="window.location.href='books.html'" class="bg-[#1e2130] p-6 rounded-2xl border border-gray-800 cursor-pointer hover:border-gray-600 transition">
-                <div class="text-gray-400 text-sm font-medium mb-1">Total Libros</div>
-                <div id="stat-total" class="text-3xl font-bold">0</div>
+    <main class="container mx-auto px-4 max-w-6xl mt-10 space-y-12">
+        
+        <section>
+            <h3 id="main-section-title" class="text-xl font-bold mb-4 pl-1 flex items-center gap-2">
+                <span class="bg-purple-500 w-1 h-6 rounded-full inline-block"></span>
+                Explorar: <span id="current-cat-name" class="text-purple-300 ml-1">Todo</span>
+            </h3>
+            
+            <div class="relative group">
+                <button onclick="scrollGrid('left', 'carrusel-main')" class="nav-arrow nav-left hidden md:flex"><i class="fas fa-chevron-left"></i></button>
+                
+                <div id="carrusel-main" class="flex gap-4 overflow-x-auto hide-scroll scroll-smooth pb-4 px-1 snap-x">
+                    </div>
+                
+                <button onclick="scrollGrid('right', 'carrusel-main')" class="nav-arrow nav-right hidden md:flex"><i class="fas fa-chevron-right"></i></button>
             </div>
-            <div class="bg-[#1e2130] p-6 rounded-2xl border border-gray-800">
-                <div class="text-gray-400 text-sm font-medium mb-1">Por leer</div>
-                <div class="text-3xl font-bold text-blue-400">0</div>
-            </div>
-            <div class="bg-[#1e2130] p-6 rounded-2xl border border-gray-800">
-                <div class="text-gray-400 text-sm font-medium mb-1">Completados</div>
-                <div class="text-3xl font-bold text-green-400">0</div>
-            </div>
-        </div>
+        </section>
 
-        <div class="mt-10">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <span>🗂️</span> Categorías
-                </h2>
-                <a href="categories.html" class="text-blue-400 hover:underline text-sm">Ver todas -></a>
+        <section>
+            <h3 class="text-xl font-bold mb-4 pl-1 flex items-center gap-2">
+                <span class="bg-blue-500 w-1 h-6 rounded-full inline-block"></span>
+                Continuar Leyendo
+            </h3>
+            
+            <div class="relative group">
+                <button onclick="scrollGrid('left', 'carrusel-reading')" class="nav-arrow nav-left hidden md:flex"><i class="fas fa-chevron-left"></i></button>
+                <div id="carrusel-reading" class="flex gap-4 overflow-x-auto hide-scroll scroll-smooth pb-4 px-1 snap-x">
+                    </div>
+                <button onclick="scrollGrid('right', 'carrusel-reading')" class="nav-arrow nav-right hidden md:flex"><i class="fas fa-chevron-right"></i></button>
             </div>
+        </section>
 
-            <div id="categories-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="col-span-3 text-center py-10 text-gray-500">Cargando datos...</div>
+
+        <section>
+            <h3 class="text-xl font-bold mb-4 pl-1 flex items-center gap-2">
+                <span class="bg-orange-500 w-1 h-6 rounded-full inline-block"></span>
+                Novedades
+            </h3>
+            
+            <div class="relative group">
+                <button onclick="scrollGrid('left', 'carrusel-news')" class="nav-arrow nav-left hidden md:flex"><i class="fas fa-chevron-left"></i></button>
+                <div id="carrusel-news" class="flex gap-4 overflow-x-auto hide-scroll scroll-smooth pb-4 px-1 snap-x">
+                    </div>
+                <button onclick="scrollGrid('right', 'carrusel-news')" class="nav-arrow nav-right hidden md:flex"><i class="fas fa-chevron-right"></i></button>
             </div>
-        </div>
+        </section>
 
     </main>
 
+    <div id="product-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl rounded-xl shadow-2xl relative text-gray-800 animate-[fadeIn_0.3s_ease-out]">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-900 z-10 text-2xl"><i class="fas fa-times"></i></button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
+                <div class="p-6 bg-gray-50 flex items-center justify-center rounded-l-xl">
+                    <img id="modal-img" src="" class="shadow-xl max-w-[160px] rounded transform hover:scale-105 transition duration-500">
+                </div>
+                <div class="p-6 md:p-8 flex flex-col">
+                    <span id="modal-cat" class="text-xs font-bold text-orange-600 uppercase mb-1">Categoría</span>
+                    <h2 id="modal-title" class="text-2xl font-bold text-gray-900 mb-1">Título</h2>
+                    <p id="modal-author" class="text-gray-600 mb-4 font-medium">Autor</p>
+                    <p id="modal-desc" class="text-sm text-gray-600 mb-6 flex-1 line-clamp-4">Descripción...</p>
+                    <div class="mt-auto border-t border-gray-100 pt-4">
+                        <span id="modal-price" class="text-3xl font-bold text-orange-600 block mb-3">Precio</span>
+                        <div class="flex gap-3">
+                            <button class="flex-1 btn-orange py-3 rounded-lg font-bold shadow">Añadir</button>
+                            <button class="flex-1 btn-outline-orange bg-white py-3 rounded-lg font-bold">Reservar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // CONFIGURACIÓN
-        const API_URL = 'http://localhost:8080/api'; 
-
-        // 1. Cargar datos del usuario
-        async function loadDashboardData() {
+        // === 1. CARGAR PERFIL DE USUARIO ===
+        async function loadUserProfile() {
             try {
-                // NOTA IMPORTANTE: Para que esto funcione, en Laravel debes tener 
-                // la ruta: Route::get('/user', ...) en api.php
-                // O usar la sesión web directamente.
-                
-                // Intento obtener usuario (si falla, no pasa nada por ahora)
-                try {
-                    const userResp = await fetch(`${API_URL}/user`); // Las cookies van automáticas
-                    if (userResp.ok) {
-                        const user = await userResp.json();
-                        document.getElementById('user-name').textContent = user.name;
-                    }
-                } catch(e) { console.log("No se pudo cargar el usuario API"); }
-
-                // Cargar Categorías (Simulado si no hay API aún)
-                loadCategories();
-                
-                // Cargar Estadísticas
-                loadStats();
-
-            } catch (error) {
-                console.error("Error cargando dashboard:", error);
-            }
-        }
-
-        async function loadCategories() {
-            const container = document.getElementById('categories-container');
-            
-            try {
-                const res = await fetch(`${API_URL}/categorias`);
-                if (!res.ok) throw new Error("API no lista");
-                
-                const categories = await res.json();
-                container.innerHTML = ''; 
-
-                if (categories.length === 0) {
-                    container.innerHTML = `<p class="text-gray-500 col-span-3">No hay categorías creadas.</p>`;
-                    return;
-                }
-                // Renderizar categorías...
-                categories.slice(0, 3).forEach(cat => {
-                   // ... tu código de renderizado ...
+                // Hacemos la petición a la API de usuario
+                const response = await fetch('/api/user', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include' 
                 });
 
-            } catch (e) { 
-                // Si falla la API, mostramos esto por defecto para que se vea bonito
-                container.innerHTML = `
-                    <div class="bg-[#1e2130] p-5 rounded-xl border border-gray-800">
-                        <h3 class="font-bold text-lg text-white">Ejemplo: Novelas</h3>
-                        <p class="text-sm text-gray-400 mt-1">Libros de ficción</p>
-                    </div>
-                `;
+                if (!response.ok) {
+                    throw new Error('No autorizado');
+                }
+
+                const userData = await response.json();
+
+                // Actualizamos el nombre en el saludo
+                const greetingElement = document.querySelector('h1.font-bold'); 
+                if (greetingElement) {
+                    greetingElement.innerText = `Hola, ${userData.name}`; 
+                }
+
+                // Cargamos estadísticas (si existen en el HTML)
+                loadDashboardStats(); 
+
+            } catch (error) {
+                console.error("Error cargando perfil:", error);
+                // Si falla (sesión expirada), redirigir al login
+                // window.location.href = 'index.html'; // Descomenta esta línea cuando tu login esté listo
             }
         }
 
-        async function loadStats() {
+        // === 2. CARGAR ESTADÍSTICAS (La función que faltaba) ===
+        async function loadDashboardStats() {
             try {
-                const res = await fetch(`${API_URL}/libros`);
-                if(res.ok) {
-                    const data = await res.json();
-                    document.getElementById('stat-total').textContent = data.length || 0;
-                }
-            } catch (e) { console.log("API Stats no lista"); }
+                const response = await fetch('/api/dashboard-stats', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) return; // Si falla silenciosamente, no pasa nada
+
+                const stats = await response.json();
+                
+                // Solo actualizamos si los elementos existen en el HTML
+                if(document.getElementById('count-books')) 
+                    document.getElementById('count-books').innerText = stats.books_count;
+                    
+                if(document.getElementById('count-authors')) 
+                    document.getElementById('count-authors').innerText = stats.authors_count;
+                    
+                if(document.getElementById('count-reading')) 
+                    document.getElementById('count-reading').innerText = stats.reading_now;
+                    
+                if(document.getElementById('count-categories')) 
+                    document.getElementById('count-categories').innerText = stats.categories_count;
+
+            } catch (error) {
+                console.log("No se pudieron cargar stats (¿Usuario no logueado?)");
+            }
         }
 
-        // Iniciar carga
-        loadDashboardData();
+        // Ejecutar al cargar la página
+        document.addEventListener('DOMContentLoaded', loadUserProfile);
+
+        // === DATOS DE EJEMPLO PARA VISUALIZACIÓN ===
+        const mainLibraryData = [
+            { id: 1, title: "Dune", author: "Frank Herbert", price: "24,90€", img: "https://covers.openlibrary.org/b/id/12697887-L.jpg", cat: "Ficción" },
+            { id: 2, title: "Sapiens", author: "Yuval N. Harari", price: "22,90€", img: "https://covers.openlibrary.org/b/id/8393663-L.jpg", cat: "No Ficción" },
+            { id: 3, title: "Watchmen", author: "Alan Moore", price: "35,00€", img: "https://covers.openlibrary.org/b/id/12555620-L.jpg", cat: "Cómic" },
+            { id: 4, title: "1984", author: "George Orwell", price: "9,95€", img: "https://covers.openlibrary.org/b/id/12632200-L.jpg", cat: "Ficción" },
+            { id: 5, title: "Steve Jobs", author: "Walter Isaacson", price: "18,50€", img: "https://covers.openlibrary.org/b/id/7342523-L.jpg", cat: "No Ficción" },
+            { id: 6, title: "Maus", author: "Art Spiegelman", price: "21,00€", img: "https://covers.openlibrary.org/b/id/10582907-L.jpg", cat: "Cómic" },
+            { id: 7, title: "El Quijote", author: "Cervantes", price: "15,00€", img: "https://covers.openlibrary.org/b/id/10565012-L.jpg", cat: "Ficción" },
+            { id: 8, title: "Cosmos", author: "Carl Sagan", price: "20,00€", img: "https://covers.openlibrary.org/b/id/12628464-L.jpg", cat: "No Ficción" }
+        ];
+
+        const readingData = [
+            { id: 101, title: "Negra nit", author: "Chris Offutt", price: "21,50€", img: "https://covers.openlibrary.org/b/id/8259449-L.jpg", cat: "Novela Negra" },
+            { id: 102, title: "Clean Code", author: "Robert C. Martin", price: "35,00€", img: "https://covers.openlibrary.org/b/id/12555620-L.jpg", cat: "Tech" },
+            { id: 103, title: "Dune Messiah", author: "Frank Herbert", price: "19,00€", img: "https://covers.openlibrary.org/b/id/14553229-L.jpg", cat: "Ficción" }
+        ];
+
+        const newsData = [
+            { id: 201, title: "Todos los cuentos", author: "Clarice Lispector", price: "24,50€", img: "https://covers.openlibrary.org/b/id/10603763-L.jpg", cat: "Cuentos" },
+            { id: 202, title: "La prueba", author: "Eliza Barry", price: "19,90€", img: "https://covers.openlibrary.org/b/id/12547191-L.jpg", cat: "Novedad" },
+            { id: 203, title: "Hermanas raras", author: "Bodine Drake", price: "18,00€", img: "https://covers.openlibrary.org/b/id/12658932-L.jpg", cat: "Terror" },
+            { id: 204, title: "Detectives", author: "Mar Benegas", price: "12,95€", img: "https://covers.openlibrary.org/b/id/12826015-L.jpg", cat: "Infantil" }
+        ];
+
+        // RENDERIZAR CUALQUIER CARRUSEL
+        function renderCarrusel(containerId, data) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            data.forEach(book => {
+                const jsonBook = JSON.stringify(book).replace(/"/g, "&quot;");
+                container.innerHTML += `
+                    <div onclick="openModal(this)" data-book="${jsonBook}" class="book-card cursor-pointer group flex flex-col flex-shrink-0 relative snap-start">
+                        <div class="h-44 overflow-hidden relative bg-gray-200">
+                            <img src="${book.img}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                            <div class="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm">
+                                ${book.cat}
+                            </div>
+                        </div>
+                        <div class="p-3 flex flex-col flex-1">
+                            <h3 class="font-bold text-sm text-gray-900 leading-tight mb-1 line-clamp-1">${book.title}</h3>
+                            <p class="text-xs text-gray-500 mb-2 truncate">${book.author}</p>
+                            <div class="mt-auto flex justify-between items-center border-t border-gray-100 pt-2">
+                                <span class="font-bold text-orange-600 text-sm">${book.price}</span>
+                                <i class="fas fa-plus-circle text-gray-300 hover:text-orange-500 transition"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // CONTROL DE TABS (Solo afecta a la primera fila)
+        function switchTab(catName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('tab-inactive');
+            });
+            document.getElementById(`tab-${catName}`).classList.remove('tab-inactive');
+            document.getElementById(`tab-${catName}`).classList.add('tab-active');
+            
+            document.getElementById('current-cat-name').textContent = catName;
+
+            // Filtro
+            const filteredData = catName === 'Todos' ? mainLibraryData : mainLibraryData.filter(b => b.cat === catName);
+            renderCarrusel('carrusel-main', filteredData);
+        }
+
+        // SCROLL
+        function scrollGrid(direction, containerId) {
+            const container = document.getElementById(containerId);
+            direction === 'left' ? container.scrollLeft -= 300 : container.scrollLeft += 300;
+        }
+
+        // MODAL
+        function openModal(element) {
+            const bookData = JSON.parse(element.getAttribute('data-book'));
+            document.getElementById('modal-img').src = bookData.img;
+            document.getElementById('modal-title').textContent = bookData.title;
+            document.getElementById('modal-author').textContent = bookData.author;
+            document.getElementById('modal-price').textContent = bookData.price;
+            document.getElementById('modal-cat').textContent = bookData.cat;
+            document.getElementById('modal-desc').textContent = `Sinopsis detallada de ${bookData.title}...`;
+            document.getElementById('product-modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
+        document.getElementById('product-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+        function logout() { window.location.href = 'index.html'; }
+
+        // INICIALIZACIÓN
+        switchTab('Todos'); 
+        renderCarrusel('carrusel-reading', readingData); 
+        renderCarrusel('carrusel-news', newsData); 
+
     </script>
 </body>
 </html>

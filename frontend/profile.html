@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - Biblioteca</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="bg-blue-600 p-4 text-white shadow-md mb-8">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="dashboard.html" class="font-bold hover:underline">⬅ Volver al Dashboard</a>
+            <h1 class="text-xl font-bold">👤 Mi Perfil</h1>
+            <div></div> </div>
+    </nav>
+
+    <div class="container mx-auto px-4 max-w-lg">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            
+            <div class="text-center mb-6">
+                <div class="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 text-3xl">
+                    👤
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800" id="display-name">Cargando...</h2>
+                <p class="text-gray-500 text-sm">Gestiona tu información personal</p>
+            </div>
+
+            <form id="profileForm" class="space-y-4">
+                
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Nombre</label>
+                    <input type="text" id="first_name" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Tu nombre">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Apellido</label>
+                    <input type="text" id="last_name" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Tu apellido">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Teléfono</label>
+                    <input type="text" id="phone" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="+34 600 000 000">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Biografía</label>
+                    <textarea id="bio" rows="3" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Algo sobre ti..."></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition duration-300">
+                    💾 Guardar Cambios
+                </button>
+
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/profile';
+
+        // Helper para obtener el Token CSRF de forma segura
+        function getCsrfToken() {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : null;
+        }
+
+        // 1. CARGAR DATOS (GET)
+        async function loadProfile() {
+            try {
+                const response = await fetch(API_URL);
+                
+                if (response.status === 401) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // OJO: Asumo que el controlador devuelve el objeto perfil directamente
+                // o dentro de { data: ... }. Ajustamos aquí:
+                const data = await response.json();
+                const profile = data.data || data; 
+
+                // Rellenar inputs
+                // IMPORTANTE: Asegúrate de que estos nombres coinciden con tu BBDD
+                document.getElementById('first_name').value = profile.first_name || ''; 
+                document.getElementById('last_name').value  = profile.last_name || '';
+                document.getElementById('phone').value      = profile.phone || '';
+                document.getElementById('bio').value        = profile.bio || '';
+
+                // Actualizar el título con el nombre
+                if(profile.first_name) {
+                    document.getElementById('display-name').textContent = `${profile.first_name} ${profile.last_name || ''}`;
+                } else {
+                    document.getElementById('display-name').textContent = "Perfil de Usuario";
+                }
+
+            } catch (error) {
+                console.error("Error cargando perfil:", error);
+                alert("Error al cargar los datos.");
+            }
+        }
+
+        // 2. GUARDAR DATOS (PUT)
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Recogemos los datos usando los nombres estándar en inglés
+            const formData = {
+                first_name: document.getElementById('first_name').value,
+                last_name:  document.getElementById('last_name').value,
+                phone:      document.getElementById('phone').value,
+                bio:        document.getElementById('bio').value
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-XSRF-TOKEN': getCsrfToken() // Token vital para seguridad
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert("¡Perfil actualizado con éxito!");
+                    loadProfile(); // Recargamos para ver cambios reflejados
+                } else {
+                    const errorData = await response.json();
+                    alert("Error: " + (errorData.message || "Revisa los campos"));
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error de conexión al guardar.");
+            }
+        });
+
+        // Iniciar carga
+        loadProfile();
+
+    </script>
+</body>
+</html>

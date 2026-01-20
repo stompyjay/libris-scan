@@ -2,11 +2,13 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+// Importamos TODOS los controladores
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BookSearchController;
+use App\Http\Controllers\ReviewController; // <--- Faltaba este
 
 /*
 |--------------------------------------------------------------------------
@@ -14,37 +16,53 @@ use App\Http\Controllers\BookSearchController;
 |--------------------------------------------------------------------------
 */
 
-// Todo protegido por autenticación (auth:sanctum es el estándar para API en Laravel)
-Route::middleware(['auth:sanctum'])->group(function () {
+/*
+|--------------------------------------------------------------------------
+| 1. RUTAS PÚBLICAS (Abiertas a todo el mundo)
+|--------------------------------------------------------------------------
+| Aquí van las cosas que se ven en la Landing Page (index.html)
+*/
+Route::get('/reviews', [ReviewController::class, 'index']);
 
-    // 1. USUARIO ACTUAL
+
+/*
+|--------------------------------------------------------------------------
+| 2. RUTAS PROTEGIDAS (Solo usuarios logueados)
+|--------------------------------------------------------------------------
+| Usamos 'web' + 'auth' para compartir la sesión del login.
+*/
+Route::middleware(['web', 'auth'])->group(function () {
+
+    // --- USUARIO Y DASHBOARD ---
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-    // 2. DASHBOARD (Datos resumen)
     Route::get('/dashboard-stats', function () {
         return response()->json([
-            'categories' => \App\Models\Category::all(),
-            'total_books' => \App\Models\Book::count(),
-            // Agrega aquí lo que necesites pintar en el dashboard
+            'categories_count' => \App\Models\Category::count(),
+            'books_count'      => \App\Models\Book::where('user_id', auth()->id())->count(),
+            'authors_count'    => \App\Models\Author::count(),
+            'reading_now'      => \App\Models\Book::where('user_id', auth()->id())
+                                                ->where('status', 'reading')->count()
         ]);
     });
 
-    // 3. RECURSOS COMPLETOS (CRUD)
-    // apiResource crea automáticamente rutas para: index, store, show, update, destroy
-    Route::apiResource('categorias', CategoryController::class);
-    Route::apiResource('libros', BookController::class);
-    Route::apiResource('autores', AuthorController::class);
+    // --- RECURSOS COMPLETOS (CRUD AUTOMÁTICO) ---
+    Route::apiResource('categories', CategoryController::class);
+    Route::apiResource('books',      BookController::class);
+    Route::apiResource('authors',    AuthorController::class);
     
-    // Perfil (Como es relación 1:1, lo hacemos manual)
-    Route::get('/mi-perfil', [ProfileController::class, 'index']);
-    Route::post('/mi-perfil', [ProfileController::class, 'store']);
-    Route::put('/mi-perfil/{profile}', [ProfileController::class, 'update']);
+    // --- PERFIL DE USUARIO ---
+    Route::get('/profile', [ProfileController::class, 'index']); 
+    Route::put('/profile', [ProfileController::class, 'update']); 
 
-    // 4. BÚSQUEDA Y ESCÁNER
-    Route::get('/scan', [BookSearchController::class, 'index']);   // Para buscar (GET)
-    Route::post('/scan', [BookSearchController::class, 'search']); // Para guardar (POST) - Nota: mantuve el nombre 'search' porque así lo tenías en routes, pero actúa como 'store'
-    Route::get('/browse', [BookSearchController::class, 'browseByCategory']); // Para explorar
-
+    // --- BÚSQUEDA Y ESCÁNER ---
+    Route::get('/scan',   [BookSearchController::class, 'index']); // Buscar (GET)
+    
+    // OJO AQUÍ: He puesto 'search' porque así se llamaba en tu controlador anterior.
+    // Si en el controlador lo cambiaste a 'store', cambia aquí 'search' por 'store'.
+    Route::post('/scan',  [BookSearchController::class, 'search']); 
+    
+    Route::get('/browse', [BookSearchController::class, 'browseByCategory']);
 });

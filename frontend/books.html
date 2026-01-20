@@ -28,7 +28,10 @@
                             Título
                         </th>
                         <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Autor
+                            Autor(es)
+                        </th>
+                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Categoría
                         </th>
                         <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Estado
@@ -40,99 +43,130 @@
                 </thead>
                 <tbody id="books-table-body">
                     <tr>
-                        <td colspan="4" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">
+                        <td colspan="5" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">
                             Cargando libros...
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-
-        <div class="mt-4 flex justify-between" id="pagination-controls">
-            </div>
     </div>
 
-    <script src="js/auth.js"></script>
     <script>
-        checkAuth(); // Seguridad primero
-
+        // CONFIGURACIÓN
+        const API_URL = '/api/books'; // Corregido: 'books' en inglés
         const tableBody = document.getElementById('books-table-body');
 
-        // FUNCIÓN PRINCIPAL: Cargar libros
-        async function loadBooks(url = `${API_URL}/libros`) {
+        // Función para obtener Token CSRF (Necesario para borrar)
+        function getCsrfToken() {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : null;
+        }
+
+        // --- 1. CARGAR LIBROS ---
+        async function loadBooks() {
             try {
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
+                // Al usar middleware 'web', las cookies viajan solas. No hace falta header Auth.
+                const response = await fetch(API_URL);
                 
-                const data = await response.json(); // Data contiene: { data: [...], links: ... } porque es paginado
-
-                // Limpiamos la tabla
-                tableBody.innerHTML = '';
-
-                if (data.data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4">No tienes libros aún. ¡Ve a escanear uno!</td></tr>`;
+                // Si la sesión expiró
+                if (response.status === 401 || response.status === 419) {
+                    window.location.href = 'login.html'; // Redirigir al login
                     return;
                 }
 
-                // Recorremos los libros y creamos las filas HTML
-                data.data.forEach(book => {
-                    // Definir color del estado
-                    let statusColor = 'bg-gray-200 text-gray-700';
-                    if(book.status === 'reading') statusColor = 'bg-blue-200 text-blue-800';
-                    if(book.status === 'completed') statusColor = 'bg-green-200 text-green-800';
+                const json = await response.json(); 
+                
+                // Laravel con paginate() devuelve los datos dentro de .data
+                // Si usas ->get() en el controlador, sería directamente 'json'
+                const books = json.data ? json.data : json;
+
+                tableBody.innerHTML = '';
+
+                if (books.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4">No tienes libros aún. ¡Ve a escanear uno!</td></tr>`;
+                    return;
+                }
+
+                books.forEach(book => {
+                    // --- CORRECCIÓN DE AUTORES ---
+                    // Como ahora es un array, extraemos los nombres y los unimos con comas
+                    let authorNames = 'Desconocido';
+                    if (book.authors && book.authors.length > 0) {
+                        authorNames = book.authors.map(a => a.name).join(', ');
+                    }
+
+                    // --- CORRECCIÓN DE CATEGORÍA ---
+                    let categoryName = book.category ? book.category.name : 'Sin categoría';
+
+                    // --- COLORES DE ESTADO ---
+                    let statusColor = 'bg-gray-200 text-gray-700'; // Default: pendiente
+                    let statusText = 'PENDIENTE';
+                    
+                    if(book.status === 'reading') {
+                        statusColor = 'bg-blue-200 text-blue-800';
+                        statusText = 'LEYENDO';
+                    }
+                    else if(book.status === 'completed') {
+                        statusColor = 'bg-green-200 text-green-800';
+                        statusText = 'LEÍDO';
+                    }
 
                     const row = `
                         <tr>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <p class="text-gray-900 whitespace-no-wrap font-bold">${book.title}</p>
+                                <p class="text-gray-900 font-bold">${book.title}</p>
                             </td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <p class="text-gray-900 whitespace-no-wrap">${book.author || 'Desconocido'}</p>
+                                <p class="text-gray-900">${authorNames}</p>
+                            </td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <span class="text-gray-600 bg-gray-100 px-2 py-1 rounded text-xs">${categoryName}</span>
                             </td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                 <span class="relative inline-block px-3 py-1 font-semibold leading-tight rounded-full ${statusColor}">
-                                    <span class="relative text-xs">${book.status.toUpperCase()}</span>
+                                    <span class="relative text-xs">${statusText}</span>
                                 </span>
                             </td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <button onclick="deleteBook(${book.id})" class="text-red-600 hover:text-red-900 ml-2">Borrar</button>
+                                <button onclick="deleteBook(${book.id})" class="text-red-600 hover:text-red-900 font-bold ml-2">Borrar</button>
                             </td>
                         </tr>
                     `;
                     tableBody.innerHTML += row;
                 });
 
-                // Aquí podrías añadir lógica para los botones de "Página siguiente" usando data.next_page_url
-
             } catch (error) {
                 console.error(error);
-                tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-red-500 p-4">Error cargando libros</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 p-4">Error cargando libros. Revisa la consola.</td></tr>`;
             }
         }
 
-        // FUNCIÓN: Borrar libro
+        // --- 2. BORRAR LIBRO ---
         async function deleteBook(id) {
             if(!confirm('¿Seguro que quieres borrar este libro?')) return;
 
             try {
-                const response = await fetch(`${API_URL}/libros/${id}`, {
+                const response = await fetch(`${API_URL}/${id}`, {
                     method: 'DELETE',
-                    headers: getAuthHeaders()
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': getCsrfToken() // TOKEN DE SEGURIDAD
+                    }
                 });
 
                 if (response.ok || response.status === 204) {
-                    alert('Libro eliminado');
+                    alert('Libro eliminado correctamente');
                     loadBooks(); // Recargamos la lista
                 } else {
-                    alert('Error al eliminar');
+                    alert('Error al eliminar. Revisa si tienes permisos.');
                 }
             } catch (error) {
                 console.error(error);
             }
         }
 
-        // Ejecutar al cargar la página
+        // Ejecutar al cargar
         loadBooks();
     </script>
 </body>

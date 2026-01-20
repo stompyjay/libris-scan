@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Category;
 use App\Models\Book; 
+use App\Models\Author; // <--- ¡IMPORTANTE! Faltaba importar el modelo Author
 
 class BookSearchController extends Controller
 {
@@ -26,17 +27,15 @@ class BookSearchController extends Controller
         $response = Http::get("https://openlibrary.org/search.json?q=" . $query . "&limit=10");
         $data = $response->json();
 
-        // 2. Procesamos los resultados para limpiarlos antes de enviarlos al Frontend
+        // 2. Procesamos los resultados
         $books = [];
         if (!empty($data['docs'])) {
             foreach ($data['docs'] as $doc) {
-                // Filtramos para que solo lleguen datos útiles
                 $books[] = [
-                    'title'       => $doc['title'] ?? 'Sin título',
-                    'author'      => $doc['author_name'][0] ?? 'Desconocido',
-                    'year'        => $doc['first_publish_year'] ?? null,
-                    'cover_id'    => $doc['cover_i'] ?? null, // ID para buscar la portada luego
-                    // Sugerimos una categoría basada en el primer "subject"
+                    'title'           => $doc['title'] ?? 'Sin título',
+                    'author'          => $doc['author_name'][0] ?? 'Desconocido', // Esto solo viaja al frontend, no se guarda aun
+                    'year'            => $doc['first_publish_year'] ?? null,
+                    'cover_id'        => $doc['cover_i'] ?? null,
                     'suggested_category' => $doc['subject'][0] ?? 'General'
                 ];
             }
@@ -48,46 +47,54 @@ class BookSearchController extends Controller
     /**
      * API: Guardar un libro seleccionado del escáner
      * Método: POST /api/scan
-     * Este método hace la MAGIA de crear la categoría si no existe.
      */
-    public function search(Request $request) // Nota: En tus rutas lo llamaste 'search', aquí actúa como guardar
+    public function search(Request $request) 
     {
-        // 1. Validamos los datos que nos envía el Frontend
+        // 1. Validamos
         $request->validate([
             'title' => 'required|string',
-            'author' => 'nullable|string',
+            'author' => 'nullable|string', // Recibimos el nombre del autor como texto
             'suggested_category' => 'nullable|string'
         ]);
 
-        // 2. Lógica de Categoría Automática
+        // 2. Lógica de Categoría (First or Create)
         $categoryName = $request->input('suggested_category', 'General');
-        
-        // Buscamos la categoría, si no existe, la creamos al vuelo
         $category = Category::firstOrCreate(
             ['name' => $categoryName], 
             ['description' => 'Categoría importada automáticamente'] 
         );
 
-        // 3. Guardamos el libro
+        // 3. Crear el libro (SIN el campo author)
         $book = Book::create([
             'title'       => $request->input('title'),
-            'author'      => $request->input('author'),
-            'category_id' => $category->id, // Usamos el ID de la categoría (nueva o existente)
+            // 'author'   => ... ¡ELIMINADO! Ya no existe esa columna
+            'category_id' => $category->id,
             'description' => 'Importado desde OpenLibrary',
-            'status'      => 'pending', // Por defecto 'pendiente'
+            'status'      => 'pending',
             'user_id'     => Auth::id(),
         ]);
 
+        // 4. Lógica de AUTOR (La parte nueva N:M)
+        $authorName = $request->input('author', 'Desconocido');
+
+        // Buscamos si el autor existe por nombre, si no, lo creamos
+        $author = Author::firstOrCreate(
+            ['name' => $authorName],
+            ['bio' => 'Autor importado de OpenLibrary'] // Dato opcional si se crea nuevo
+        );
+
+        // Vinculamos el libro con el autor
+        $book->authors()->attach($author->id);
+
         return response()->json([
             'message' => '¡Libro guardado con éxito!',
-            'category_created' => $category->wasRecentlyCreated, // Booleano para saber si se creó nueva
-            'book' => $book
+            'category_created' => $category->wasRecentlyCreated,
+            'book' => $book->load('authors') // Devolvemos el libro con el autor cargado
         ], 201);
     }
 
     /**
-     * API: Explorar por Categoría (OpenLibrary Subjects)
-     * Método: GET /api/browse?category=fantasy
+     * API: Explorar por Categoría
      */
     public function browseByCategory(Request $request)
     {
@@ -97,7 +104,6 @@ class BookSearchController extends Controller
             return response()->json(['error' => 'Falta la categoría'], 400);
         }
 
-        // Consultamos la API de Temas
         $response = Http::get("https://openlibrary.org/subjects/" . strtolower($category) . ".json?limit=12");
         $data = $response->json();
 
@@ -106,9 +112,9 @@ class BookSearchController extends Controller
         if (isset($data['works'])) {
             foreach ($data['works'] as $work) {
                 $books[] = [
-                    'title'     => $work['title'],
-                    'author'    => $work['authors'][0]['name'] ?? 'Desconocido',
-                    'cover_id'  => $work['cover_id'] ?? null,
+                    'title'      => $work['title'],
+                    'author'     => $work['authors'][0]['name'] ?? 'Desconocido',
+                    'cover_id'   => $work['cover_id'] ?? null,
                     'suggested_category' => ucfirst($category) 
                 ];
             }

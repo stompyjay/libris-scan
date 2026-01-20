@@ -48,7 +48,8 @@
             <h3 id="modal-title" class="text-xl font-bold mb-4">Nueva Categoría</h3>
             
             <form id="category-form">
-                <input type="hidden" id="cat-id"> <div class="mb-4">
+                <input type="hidden" id="cat-id"> 
+                <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Nombre</label>
                     <input type="text" id="cat-name" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500" required>
                 </div>
@@ -66,10 +67,10 @@
         </div>
     </div>
 
-    <script src="js/auth.js"></script>
     <script>
-        checkAuth();
-
+        // CONFIGURACIÓN GLOBAL
+        const API_URL = '/api/categories'; // <-- CAMBIO IMPORTANTE: 'categories' en inglés
+        
         const tableBody = document.getElementById('categories-table-body');
         const modal = document.getElementById('category-modal');
         const modalTitle = document.getElementById('modal-title');
@@ -77,11 +78,25 @@
         const catNameInput = document.getElementById('cat-name');
         const catDescInput = document.getElementById('cat-desc');
 
+        // Función para obtener el Token CSRF (Obligatorio para POST/PUT/DELETE)
+        function getCsrfToken() {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : null;
+        }
+
         // 1. CARGAR CATEGORÍAS (GET)
         async function loadCategories() {
             try {
-                const response = await fetch(`${API_URL}/categorias`, { headers: getAuthHeaders() });
-                const categories = await response.json(); // Recuerda que en el controller usamos get(), no paginate()
+                // No necesitamos headers de Auth, la cookie viaja sola
+                const response = await fetch(API_URL);
+
+                // Si la sesión expiró (401 o 419), mandamos al login
+                if (response.status === 401 || response.status === 419) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const categories = await response.json(); 
 
                 tableBody.innerHTML = '';
 
@@ -101,9 +116,9 @@
                             </td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
                                 <button onclick="openModal('edit', ${cat.id}, '${cat.name}', '${cat.description || ''}')" 
-                                        class="text-blue-600 hover:text-blue-900 mr-3">Editar</button>
+                                        class="text-blue-600 hover:text-blue-900 mr-3 font-bold">Editar</button>
                                 <button onclick="deleteCategory(${cat.id})" 
-                                        class="text-red-600 hover:text-red-900">Borrar</button>
+                                        class="text-red-600 hover:text-red-900 font-bold">Borrar</button>
                             </td>
                         </tr>
                     `;
@@ -112,12 +127,12 @@
 
             } catch (error) {
                 console.error(error);
-                tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-red-500">Error cargando datos</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-red-500 p-4">Error cargando datos</td></tr>';
             }
         }
 
         // 2. ABRIR Y CERRAR MODAL
-        function openModal(mode, id = null, name = '', desc = '') {
+        window.openModal = function(mode, id = null, name = '', desc = '') {
             modal.classList.remove('hidden');
             if (mode === 'edit') {
                 modalTitle.textContent = 'Editar Categoría';
@@ -127,11 +142,11 @@
             } else {
                 modalTitle.textContent = 'Nueva Categoría';
                 document.getElementById('category-form').reset();
-                catIdInput.value = ''; // ID vacío significa CREAR
+                catIdInput.value = ''; // ID vacío = CREAR
             }
         }
 
-        function closeModal() {
+        window.closeModal = function() {
             modal.classList.add('hidden');
         }
 
@@ -145,22 +160,26 @@
             
             // Si hay ID, es EDITAR (PUT), si no, es CREAR (POST)
             const isEdit = !!id;
-            const url = isEdit ? `${API_URL}/categorias/${id}` : `${API_URL}/categorias`;
+            const url = isEdit ? `${API_URL}/${id}` : API_URL;
             const method = isEdit ? 'PUT' : 'POST';
 
             try {
                 const response = await fetch(url, {
                     method: method,
-                    headers: getAuthHeaders(),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-XSRF-TOKEN': getCsrfToken() // <--- VITAL PARA SEGURIDAD
+                    },
                     body: JSON.stringify({ name, description })
                 });
 
                 if (response.ok) {
                     closeModal();
-                    loadCategories(); // Recargar la tabla
+                    loadCategories(); 
                 } else {
                     const data = await response.json();
-                    alert("Error: " + (data.message || "Revisa los datos (nombre duplicado?)"));
+                    alert("Error: " + (data.message || "Revisa los datos."));
                 }
             } catch (error) {
                 console.error(error);
@@ -169,13 +188,16 @@
         });
 
         // 4. BORRAR (DELETE)
-        async function deleteCategory(id) {
+        window.deleteCategory = async function(id) {
             if(!confirm('¿Seguro que quieres borrar esta categoría?')) return;
 
             try {
-                const response = await fetch(`${API_URL}/categorias/${id}`, {
+                const response = await fetch(`${API_URL}/${id}`, {
                     method: 'DELETE',
-                    headers: getAuthHeaders()
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': getCsrfToken() // <--- VITAL PARA SEGURIDAD
+                    }
                 });
 
                 if (response.ok || response.status === 204) {

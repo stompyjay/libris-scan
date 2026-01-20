@@ -2,64 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Review;
+use App\Models\Review; // Asegúrate de tener el modelo creado
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * API: Obtener reseñas para la Landing Page
+     * Es PÚBLICA (no requiere login)
      */
     public function index()
-    {
-        //
-    }
+{
+    // Solo obtenemos las que tengan is_visible = true (o 1)
+    $reviews = Review::where('is_visible', true)
+                     ->latest()
+                     ->take(3)
+                     ->get();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Review $review)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Review $review)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Review $review)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Review $review)
-    {
-        //
-    }
+    return response()->json($reviews);
+}
 }

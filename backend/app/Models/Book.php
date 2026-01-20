@@ -9,29 +9,33 @@ class Book extends Model
 {
     use HasFactory;
 
-    // 1. CAMPOS PERMITIDOS (Seguridad)
-    // Esto es OBLIGATORIO para usar Book::create() en el controlador
     protected $fillable = [
-        'title',
-        'author',
-        'cover_id',
-        'description',
-        'status',
-        'user_id',
-        'category_id',
+        'user_id', 
+        'category_id', 
+        'title', 
+        'isbn', 
+        'cover_id', 
+        'description', 
+        'status'
     ];
 
-    // 2. RELACIONES
-    
-    // Un libro pertenece a un Usuario (el dueño)
+    // Relación 1:N Inversa (Un libro pertenece a UN usuario)
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Un libro pertenece a una Categoría
+    // Relación 1:N Inversa (Un libro pertenece a UNA categoría)
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    // --- AQUÍ ESTÁ EL REQUISITO N:M ---
+    // Relación N:M (Un libro pertenece a MUCHOS autores)
+    public function authors()
+    {
+        // Laravel busca automáticamente la tabla pivote 'author_book'
+        return $this->belongsToMany(Author::class);
     }
 }

@@ -2,101 +2,80 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Profile;
+use App\Models\Author;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
-class ProfileController extends Controller
+class AuthorController extends Controller
 {
     /**
-     * API: Obtener mi perfil
-     * Método: GET /api/mi-perfil
-     * Lógica: Si no existe, lo crea vacío.
+     * LISTAR AUTORES
+     * Importante: Esto lo usará tu formulario de "Crear Libro" 
+     * para llenar el select múltiple.
      */
     public function index()
     {
-        $user = Auth::user();
-
-        // Intenta obtener el perfil. Si es null, crea uno nuevo vacío.
-        $profile = $user->profile ?: $user->profile()->create([
-            'nombre'   => '',
-            'apellido' => '',
-            'telefono' => '',
-        ]);
-
-        return response()->json($profile);
+        // Devolvemos todos los autores ordenados alfabéticamente
+        $authors = Author::orderBy('name', 'asc')->get();
+        return response()->json($authors);
     }
 
     /**
-     * ELIMINADO: public function edit(Profile $profile)
-     * Las APIs no devuelven formularios.
+     * CREAR UN NUEVO AUTOR
      */
-
-    /**
-     * API: Actualizar perfil
-     * Método: PUT /api/mi-perfil/{id}
-     */
-    public function update(Request $request, Profile $profile)
-    {
-        // 1. SEGURIDAD: Verificar que el perfil pertenece al usuario logueado
-        if ($profile->user_id !== Auth::id()) {
-            return response()->json(['error' => 'No tienes permiso para editar este perfil.'], 403);
-        }
-
-        // 2. Validar datos
-        $validated = $request->validate([
-            'nombre'   => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'telefono' => 'required|string|max:20',
-        ]);
-
-        // 3. Actualizar
-        $profile->update($validated);
-
-        // 4. Respuesta JSON
-        return response()->json([
-            'message' => 'Perfil actualizado correctamente',
-            'profile' => $profile
-        ]);
-    }
-
-    /**
-     * --- MÉTODOS EXTRA (Si los necesitas por requisitos académicos) ---
-     * En una API real RESTful, estos se usarían, pero en tu flujo 
-     * de "Mi Perfil" actual no son necesarios.
-     */
-
-    public function create()
-    {
-        return response()->json(['message' => 'No implementado en API'], 501);
-    }
-
     public function store(Request $request)
     {
-        // La creación se maneja automáticamente en el index(), pero si quisieras hacerlo manual:
-        /*
-        $profile = Auth::user()->profile()->create($request->all());
-        return response()->json($profile, 201);
-        */
-        return response()->json(['message' => 'Usar index para auto-creación'], 200);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:authors,name',
+            'bio'  => 'nullable|string',
+        ]);
+
+        $author = Author::create($validated);
+
+        return response()->json([
+            'message' => 'Autor creado con éxito',
+            'author' => $author
+        ], 201);
     }
 
-    public function show(Profile $profile)
+    /**
+     * VER UN AUTOR (Y SUS LIBROS)
+     * Aquí demostramos la relación N:M inversa.
+     */
+    public function show(Author $author)
     {
-        // Seguridad
-        if ($profile->user_id !== Auth::id()) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-        return response()->json($profile);
+        // Cargamos la relación 'books' para ver qué libros ha escrito este señor
+        $author->load('books'); 
+        
+        return response()->json($author);
     }
 
-    public function destroy(Profile $profile)
+    /**
+     * ACTUALIZAR AUTOR
+     */
+    public function update(Request $request, Author $author)
     {
-        // Por si decides permitir borrar perfil
-        if ($profile->user_id !== Auth::id()) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-        $profile->delete();
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'bio'  => 'nullable|string',
+        ]);
+
+        $author->update($validated);
+
+        return response()->json([
+            'message' => 'Autor actualizado',
+            'author' => $author
+        ]);
+    }
+
+    /**
+     * ELIMINAR AUTOR
+     */
+    public function destroy(Author $author)
+    {
+        // Al borrar el autor, se borra automáticamente de la tabla pivote 'author_book'
+        // pero los libros NO se borran (solo se quedan sin este autor).
+        $author->delete();
+
         return response()->json(null, 204);
     }
 }

@@ -1,21 +1,27 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
-// 1. La raíz redirige al login (o a tu index.html si prefieres)
-Route::get('/', function () {
+// 1. --- BORRA O COMENTA ESTO ---
+// Al quitar esto, cuando vayas a '/', Nginx será libre de mostrar tu index.html
+/* Route::get('/', function () {
     return redirect('/login');
 });
+*/
 
-// 2. Ruta para proteger el cierre de sesión y redirección post-login
-Route::middleware('auth')->group(function () {
-    // Aquí podrías dejar rutas muy específicas que necesiten sesión web
-    // pero idealmente, casi todo se va.
-});
+// 2. --- RUTA DE SALIDA (Déjala tal cual) ---
+Route::get('/logout-manual', function () {
+    Auth::logout();
+    Session::flush();
+    return redirect('/'); // Ahora sí, esto te dejará en la Landing Page
+})->name('logout.manual');
 
+// 3. --- EL PUENTE DEL DASHBOARD ---
 Route::get('/redirigir-dashboard', function () {
     return redirect('/dashboard.html'); 
 })->middleware(['auth'])->name('dashboard');
 
-// 3. ESTO ES LO IMPORTANTE: Las rutas de autenticación (Login, Register)
+// 4. --- RUTAS DE AUTH ---
 require __DIR__.'/auth.php';

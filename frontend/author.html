@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Autores</title>
+    <style>
+        /* Estilos simples y limpios */
+        body { font-family: sans-serif; background-color: #f3f4f6; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        /* Navegación */
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 15px; text-decoration: none; color: #3b82f6; font-weight: bold; }
+
+        /* Tarjetas y Formularios */
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin-top: 0; }
+
+        /* Tabla */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        th { background-color: #f9fafb; }
+
+        /* Botones */
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-edit { background-color: #f59e0b; color: white; }
+        .btn-info { background-color: #10b981; color: white; }
+
+        /* Inputs */
+        input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <nav>
+            <a href="dashboard.html">← Volver al Dashboard</a>
+            <a href="books.html">Libros</a>
+            <a href="profile.html">Mi Perfil</a>
+        </nav>
+
+        <h1>📚 Gestión de Autores</h1>
+
+        <div class="card">
+            <h2 id="formTitle">Nuevo Autor</h2>
+            <form id="authorForm">
+                <input type="hidden" id="authorId"> <label>Nombre Completo:</label>
+                <input type="text" id="name" required placeholder="Ej: J.K. Rowling">
+
+                <label>Biografía (Opcional):</label>
+                <textarea id="bio" rows="3" placeholder="Pequeña descripción..."></textarea>
+
+                <button type="submit" class="btn-primary" id="btnSubmit">Guardar Autor</button>
+                <button type="button" onclick="resetForm()" style="background: #ccc; display:none;" id="btnCancel">Cancelar</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Lista de Autores</h2>
+            <table id="authorsTable">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Biografía</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="3">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const API_URL = '/api/authors';
+
+        // Función para obtener el token CSRF de las cookies (Vital para Laravel)
+        function getCsrfToken() {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : null;
+        }
+
+        // --- 1. CARGAR AUTORES (READ) ---
+        async function loadAuthors() {
+            try {
+                const response = await fetch(API_URL);
+                const authors = await response.json();
+                
+                const tbody = document.querySelector('#authorsTable tbody');
+                tbody.innerHTML = '';
+
+                if(authors.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3">No hay autores registrados.</td></tr>';
+                    return;
+                }
+
+                authors.forEach(author => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${author.name}</strong></td>
+                            <td>${author.bio || '<i style="color:#999">Sin biografía</i>'}</td>
+                            <td>
+                                <button class="btn-info" onclick="viewBooks(${author.id})">📚 Ver Libros</button>
+                                <button class="btn-edit" onclick="editAuthor(${author.id}, '${author.name}', '${author.bio || ''}')">✏️ Editar</button>
+                                <button class="btn-danger" onclick="deleteAuthor(${author.id})">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar autores. ¿Estás logueado?');
+            }
+        }
+
+        // --- 2. CREAR O ACTUALIZAR (CREATE / UPDATE) ---
+        document.getElementById('authorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('authorId').value;
+            const name = document.getElementById('name').value;
+            const bio = document.getElementById('bio').value;
+
+            // Si hay ID es PUT (Editar), si no es POST (Crear)
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/${id}` : API_URL;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': getCsrfToken()
+                    },
+                    body: JSON.stringify({ name, bio })
+                });
+
+                if (!response.ok) throw new Error('Error al guardar');
+
+                alert(id ? 'Autor actualizado' : 'Autor creado');
+                resetForm();
+                loadAuthors(); // Recargar tabla
+
+            } catch (error) {
+                alert('Error: El nombre quizás ya existe o faltan datos.');
+            }
+        });
+
+        // --- 3. PREPARAR FORMULARIO PARA EDITAR ---
+        window.editAuthor = (id, name, bio) => {
+            document.getElementById('formTitle').innerText = 'Editar Autor';
+            document.getElementById('authorId').value = id;
+            document.getElementById('name').value = name;
+            document.getElementById('bio').value = bio;
+            document.getElementById('btnSubmit').innerText = 'Actualizar';
+            document.getElementById('btnCancel').style.display = 'inline-block';
+            
+            // Scroll hacia arriba suavemente
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // --- 4. BORRAR AUTOR (DELETE) ---
+        window.deleteAuthor = async (id) => {
+            if (!confirm('¿Seguro que quieres borrar este autor? Los libros se quedarán huérfanos de autor, pero no se borrarán.')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-XSRF-TOKEN': getCsrfToken() }
+                });
+
+                if (response.ok) {
+                    loadAuthors();
+                } else {
+                    alert('No se pudo borrar');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
+        // --- 5. VER LIBROS DEL AUTOR (SHOW) ---
+        // Usamos el método show() del controlador que tiene ->load('books')
+        window.viewBooks = async (id) => {
+            try {
+                const response = await fetch(`${API_URL}/${id}`);
+                const author = await response.json();
+
+                let message = `Libros de ${author.name}:\n\n`;
+                
+                if (author.books && author.books.length > 0) {
+                    author.books.forEach(book => {
+                        message += `- ${book.title} (${book.year || 'Año desc.'})\n`;
+                    });
+                } else {
+                    message += "No tiene libros registrados en tu sistema.";
+                }
+
+                alert(message);
+            } catch (error) {
+                alert('Error al cargar los libros del autor.');
+            }
+        };
+
+        // --- UTILIDADES ---
+        window.resetForm = () => {
+            document.getElementById('authorForm').reset();
+            document.getElementById('authorId').value = '';
+            document.getElementById('formTitle').innerText = 'Nuevo Autor';
+            document.getElementById('btnSubmit').innerText = 'Guardar Autor';
+            document.getElementById('btnCancel').style.display = 'none';
+        }
+
+        // Iniciar
+        loadAuthors();
+
+    </script>
+</body>
+</html>

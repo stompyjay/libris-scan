@@ -3,109 +3,152 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 
 class BookController extends Controller
 {
     /**
-     * API: Obtener lista de libros del usuario (JSON)
+     * API: BÚSQUEDA INTELIGENTE (Escáner)
+     * Busca en OpenLibrary por Título, Autor o ISBN automáticamente.
      */
-    public function index()
+    public function scan(Request $request)
     {
-        // Recuperamos los libros paginados (igual que antes)
-        $books = Book::where('user_id', Auth::id())
-                     ->orderBy('created_at', 'desc')
-                     ->paginate(10);
+        $query = $request->query('query');
 
-        // Devolvemos JSON directo
+        if (!$query) {
+            return response()->json([]);
+        }
+
+        // Conectamos con OpenLibrary
+        // "q=" busca en todos los campos a la vez (magia)
+        $url = "https://openlibrary.org/search.json?q=" . urlencode($query) . "&limit=12";
+
+        try {
+            // Usamos el cliente HTTP de Laravel para más seguridad
+            $response = Http::get($url);
+            
+            if ($response->failed()) {
+                return response()->json(['error' => 'No se pudo conectar con OpenLibrary'], 500);
+            }
+
+            $data = $response->json();
+            $books = [];
+
+            if (isset($data['docs'])) {
+                foreach ($data['docs'] as $item) {
+                    // Procesamos los datos para que el frontend los entienda
+                    $books[] = [
+                        'title' => $item['title'] ?? 'Sin título',
+                        'author' => isset($item['author_name']) ? implode(', ', $item['author_name']) : 'Desconocido',
+                        'year' => $item['first_publish_year'] ?? null,
+                        'isbn' => isset($item['isbn']) ? $item['isbn'][0] : null, // Cogemos el primer ISBN
+                        'cover_id' => $item['cover_i'] ?? null,
+                        'suggested_category' => isset($item['subject']) ? $item['subject'][0] : null
+                    ];
+                }
+            }
+
+            return response()->json($books);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error del servidor: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * API: Listar libros (Con filtro de Categoría)
+     */
+    public function index(Request $request)
+    {
+        // 1. Consulta base: solo libros del usuario
+        $query = Book::where('user_id', Auth::id())->with('category');
+
+        // 2. Filtro: Si recibimos category_id, filtramos
+        if ($request->has('category_id') && $request->category_id != '') {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // 3. Ordenar por más recientes
+        $books = $query->latest()->get();
+
         return response()->json($books);
     }
 
     /**
-     * NOTA: Se han eliminado create() y edit()
-     * Las APIs no sirven HTML (formularios), eso lo construye tu JavaScript en el frontend.
-     */
-
-    /**
-     * API: Guardar un libro nuevo
+     * API: Guardar libro (Desde el Escáner)
      */
     public function store(Request $request)
     {
-        // 1. Validación (La mantenemos igual)
+        // Validación simple compatible con el escáner
         $validated = $request->validate([
-            'title'       => 'required|string|max:255',
-            'author'      => 'nullable|string|max:255',
-            'category_id' => 'nullable|exists:categories,id',
-            'description' => 'nullable|string',
-            'status'      => 'required|in:pending,reading,completed,borrowed',
+            'title' => 'required|string|max:255',
+            'author' => 'required|string', // Guardamos autor como texto
+            'isbn' => 'nullable|string',
+            'year' => 'nullable|integer',
+            'cover_url' => 'nullable|string',
+            'suggested_category' => 'nullable|string' // Lo que sugiere la API
         ]);
 
-        // 2. Creación vinculada al usuario
-        $book = $request->user()->books()->create($validated);
+        // AUTO-CATEGORIZACIÓN
+        // Si la API sugiere "Fiction", buscamos si existe esa categoría en tu BD
+        $categoryId = null;
+        if (!empty($request->suggested_category)) {
+            // Buscamos una categoría parecida
+            $category = Category::where('name', 'LIKE', '%' . $request->suggested_category . '%')->first();
+            if ($category) {
+                $categoryId = $category->id;
+            }
+        }
+        // Si el usuario eligió una manualmente en un select (opcional)
+        if ($request->has('category_id')) {
+            $categoryId = $request->category_id;
+        }
 
-        // 3. Respuesta JSON (Código 201 = Created)
+        // Crear el libro
+        $book = Book::create([
+            'user_id' => Auth::id(),
+            'category_id' => $categoryId,
+            'title' => $request->title,
+            'author' => $request->author,
+            'isbn' => $request->isbn,
+            'year' => $request->year,
+            'cover_url' => $request->cover_url,
+            'status' => 'pending' // Estado por defecto
+        ]);
+
         return response()->json([
-            'message' => 'Libro creado correctamente',
-            'book'    => $book
+            'message' => 'Libro guardado exitosamente',
+            'book' => $book
         ], 201);
-    }
-
-    /**
-     * API: Ver un solo libro
-     */
-    public function show(Book $book)
-    {
-        // Seguridad: Verificar dueño
-        if ($book->user_id !== Auth::id()) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-
-        return response()->json($book);
-    }
-
-    /**
-     * API: Actualizar libro
-     */
-    public function update(Request $request, Book $book)
-    {
-        // Seguridad
-        if ($book->user_id !== Auth::id()) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-
-        // Validación
-        $validated = $request->validate([
-            'title'       => 'required|string|max:255',
-            'author'      => 'nullable|string|max:255',
-            'category_id' => 'nullable|exists:categories,id',
-            'status'      => 'required|in:pending,reading,completed,borrowed',
-            'description' => 'nullable|string',
-        ]);
-
-        // Actualizar
-        $book->update($validated);
-
-        // Devolvemos el libro actualizado
-        return response()->json([
-            'message' => 'Libro actualizado',
-            'book'    => $book
-        ]);
     }
 
     /**
      * API: Eliminar libro
      */
-    public function destroy(Book $book)
+    public function destroy($id)
     {
-        // Seguridad
-        if ($book->user_id !== Auth::id()) {
-            return response()->json(['error' => 'No autorizado'], 403);
+        $book = Book::where('user_id', Auth::id())->where('id', $id)->first();
+
+        if ($book) {
+            $book->delete();
+            return response()->json(['message' => 'Libro eliminado']);
         }
 
-        $book->delete();
-
-        // Código 204 = No Content (Operación exitosa, sin contenido que devolver)
-        return response()->json(null, 204);
+        return response()->json(['error' => 'No encontrado'], 404);
+    }
+    
+    /**
+     * API: Ver un solo libro (Opcional, para detalles)
+     */
+    public function show($id)
+    {
+        $book = Book::where('user_id', Auth::id())->with('category')->find($id);
+        
+        if (!$book) return response()->json(['error' => 'No encontrado'], 404);
+        
+        return response()->json($book);
     }
 }

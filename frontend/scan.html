@@ -12,7 +12,8 @@
         <div class="container mx-auto flex justify-between items-center">
             <a href="dashboard.html" class="font-bold hover:underline">⬅ Volver al Dashboard</a>
             <h1 class="text-xl font-bold">🔍 Buscador Inteligente</h1>
-            <div></div> </div>
+            <div></div> 
+        </div>
     </nav>
 
     <div class="container mx-auto px-4 max-w-5xl">
@@ -43,14 +44,18 @@
 
     </div>
 
-    <script src="js/auth.js"></script>
     <script>
-        checkAuth(); // Seguridad
-
-        // Variable global para almacenar lo que encontremos
+        // CONFIGURACIÓN
+        const API_URL = '/api'; // Ajusta si tu prefijo cambia
         let currentResults = [];
 
-        // FUNCIÓN 1: Buscar en la API
+        // Helper para Token CSRF
+        function getCsrfToken() {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : null;
+        }
+
+        // FUNCIÓN 1: Buscar en la API (GET)
         async function searchBooks() {
             const query = document.getElementById('search-query').value;
             const resultsGrid = document.getElementById('results-grid');
@@ -58,47 +63,51 @@
 
             if (!query) return alert("Escribe algo primero");
 
-            // UI: Mostrar carga, limpiar resultados previos
+            // UI: Mostrar carga
             loading.classList.remove('hidden');
             resultsGrid.innerHTML = '';
 
             try {
-                // Hacemos GET a tu backend Laravel
-                const response = await fetch(`${API_URL}/scan?query=${encodeURIComponent(query)}`, {
-                    headers: getAuthHeaders()
-                });
+                // GET a tu backend Laravel. Las cookies de sesión van automáticas.
+                const response = await fetch(`${API_URL}/scan?query=${encodeURIComponent(query)}`);
+
+                if (response.status === 401 || response.status === 419) {
+                    window.location.href = 'login.html';
+                    return;
+                }
 
                 const books = await response.json();
-                
-                // Guardamos los libros en la variable global para usarlos al guardar
-                currentResults = books;
+                currentResults = books; // Guardamos para usar al clickar guardar
 
                 loading.classList.add('hidden');
 
-                if (books.length === 0) {
+                if (!books || books.length === 0) {
                     resultsGrid.innerHTML = `<p class="col-span-full text-center text-gray-500">No encontramos nada. Prueba con otro nombre.</p>`;
                     return;
                 }
 
-                // Generar HTML para cada libro
+                // Generar HTML
                 books.forEach((book, index) => {
-                    // Si tiene ID de portada, construimos la URL de OpenLibrary, si no, imagen gris
+                    // Lógica para la imagen
                     const coverUrl = book.cover_id 
                         ? `https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`
-                        : 'https://via.placeholder.com/150x220?text=Sin+Portada';
+                        : (book.cover_url || 'https://via.placeholder.com/150x220?text=Sin+Portada');
+
+                    // Guardamos la URL calculada en el objeto para enviarla luego al backend si hace falta
+                    currentResults[index].final_cover_url = coverUrl;
 
                     const card = `
                         <div class="bg-white rounded-lg shadow hover:shadow-xl transition overflow-hidden flex flex-col h-full border border-gray-100">
                             <div class="h-48 bg-gray-200 flex justify-center items-center overflow-hidden">
-                                <img src="${coverUrl}" alt="Portada" class="h-full object-cover">
+                                <img src="${coverUrl}" alt="Portada" class="h-full object-cover w-full">
                             </div>
                             <div class="p-4 flex-1 flex flex-col">
-                                <h3 class="font-bold text-lg text-gray-800 leading-tight mb-1">${book.title}</h3>
-                                <p class="text-sm text-gray-600 mb-2">Autor: ${book.author}</p>
+                                <h3 class="font-bold text-lg text-gray-800 leading-tight mb-1 line-clamp-2">${book.title}</h3>
+                                <p class="text-sm text-gray-600 mb-2 line-clamp-1">Autor: ${book.author}</p>
                                 <p class="text-xs text-gray-400 mb-4">Año: ${book.year || 'N/D'} | Cat: ${book.suggested_category}</p>
                                 
                                 <button id="btn-${index}" onclick="saveBook(${index})" 
-                                        class="mt-auto w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition font-semibold">
+                                        class="mt-auto w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition font-semibold shadow-sm">
                                     + Añadir a mi lista
                                 </button>
                             </div>
@@ -114,50 +123,51 @@
             }
         }
 
-        // FUNCIÓN 2: Guardar un libro específico
+        // FUNCIÓN 2: Guardar un libro (POST)
         async function saveBook(index) {
-            // Recuperamos el objeto libro del array global usando el índice
             const bookToSave = currentResults[index];
             const btn = document.getElementById(`btn-${index}`);
 
-            // Feedback visual inmediato
+            // UI Feedback
+            const originalText = btn.textContent;
             btn.textContent = "Guardando...";
             btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.classList.add('opacity-75');
 
             try {
-                // Hacemos POST a tu backend
-                // NOTA: Tu backend espera 'search' como ruta POST según lo configuramos, 
-                // pero actúa como Store.
+                // Enviamos POST a /api/scan (o donde hayas configurado el store)
                 const response = await fetch(`${API_URL}/scan`, {
                     method: 'POST',
-                    headers: getAuthHeaders(),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-XSRF-TOKEN': getCsrfToken() // <--- IMPORTANTE
+                    },
                     body: JSON.stringify({
                         title: bookToSave.title,
-                        author: bookToSave.author,
-                        suggested_category: bookToSave.suggested_category
+                        author: bookToSave.author, // Tu backend procesará esto y buscará/creará el autor
+                        suggested_category: bookToSave.suggested_category,
+                        year: bookToSave.year,
+                        cover_url: bookToSave.final_cover_url // Enviamos la imagen también
                     })
                 });
 
                 const data = await response.json();
 
-                if (response.status === 201) {
+                if (response.ok) {
                     btn.textContent = "✔ Guardado";
-                    btn.classList.remove('bg-green-500', 'hover:bg-green-600');
-                    btn.classList.add('bg-gray-500'); // Cambiar a gris para indicar que ya está
-                    
-                    // Opcional: Mostrar una alerta bonita o notificación
-                    // alert(`Libro guardado en categoría: ${data.book.category_id}`);
+                    btn.className = "mt-auto w-full bg-gray-500 text-white py-2 rounded cursor-default";
+                    // Confeti o alerta opcional
                 } else {
-                    btn.textContent = "Error";
-                    btn.disabled = false;
-                    alert("Error: " + (data.message || "No se pudo guardar"));
+                    throw new Error(data.message || "Error al guardar");
                 }
 
             } catch (error) {
                 console.error(error);
-                btn.textContent = "Reintentar";
+                btn.textContent = "Error - Reintentar";
                 btn.disabled = false;
+                btn.classList.remove('opacity-75');
+                alert(error.message);
             }
         }
     </script>
