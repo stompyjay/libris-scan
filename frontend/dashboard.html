@@ -3,174 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Librería - Completa</title>
+    <title>eBookStore - Tienda Principal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* FONDO OSCURO */
         body { background-color: #121214; color: #ffffff; font-family: 'Inter', sans-serif; }
-
-        /* BUSCADOR */
-        .search-container { background-color: #eaddff; border-radius: 16px; }
-
-        /* TABS (BOTONES CATEGORÍAS) */
-        .tab-btn { border-radius: 9999px; padding: 8px 20px; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; cursor: pointer; }
-        .tab-active { background-color: #1d9bf0; color: white; box-shadow: 0 4px 15px rgba(29, 155, 240, 0.4); }
-        .tab-inactive { background-color: #202024; color: #71717a; border: 1px solid #3f3f46; }
-        .tab-inactive:hover { background-color: #27272a; color: white; }
-
-        /* TARJETAS DE LIBROS */
-        .book-card {
-            background-color: white;
-            color: #1f2937;
-            border-radius: 20px;
-            overflow: hidden;
-            transition: transform 0.2s;
-            min-width: 180px;
-            max-width: 180px;
-            scroll-snap-align: start;
-        }
-        .book-card:hover { transform: translateY(-5px); }
-
-        /* OCULTAR SCROLL */
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* FLECHAS DE NAVEGACIÓN */
-        .nav-arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 40px;
-            height: 40px;
-            background-color: #e65505;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 20;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: background 0.3s, transform 0.2s;
-            border: 2px solid #121214;
-        }
-        .nav-arrow:hover { background-color: #ff6b1a; transform: translateY(-50%) scale(1.1); }
-        .nav-left { left: -15px; }
-        .nav-right { right: -15px; }
-
-        /* MODAL */
-        .btn-orange { background-color: #e65505; color: white; }
-        .btn-outline-orange { border: 1px solid #e65505; color: #e65505; }
+        @media (min-width: 768px) { .main-content { margin-left: 260px; } }
+        
+        .book-card { background-color: #1a1a1e; border-radius: 20px; overflow: hidden; transition: all 0.3s; border: 1px solid #27272a; }
+        .book-card:hover { transform: translateY(-10px); border-color: #3b82f6; }
+        
+        .category-select { background: #1a1a1e; border: 1px solid #333; border-radius: 12px; padding: 10px; color: white; outline: none; }
+        
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="min-h-screen pb-20 overflow-x-hidden">
+<body class="min-h-screen pb-20 md:pb-0">
 
-    <header class="pt-6 pb-2 px-4 container mx-auto max-w-6xl">
-        <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl">👤</div>
-            <div>
-                <h1 class="font-bold text-lg">Hola, Lector</h1>
-                <p class="text-xs text-gray-400">Tu biblioteca personal</p>
-            </div>
-            <button onclick="logout()" class="ml-auto text-gray-400 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
+    <aside class="hidden md:flex flex-col w-64 bg-[#1a1a1e] h-screen fixed left-0 top-0 border-r border-gray-800 p-6 z-40">
+        <div class="text-2xl font-bold text-blue-500 mb-10 flex items-center gap-2">
+            <i class="fas fa-bolt"></i> eBookStore
         </div>
+        <nav class="space-y-4 flex-1">
+            <a href="dashboard.html" class="flex items-center gap-3 text-white bg-blue-600/10 p-3 rounded-xl border border-blue-600/20">
+                <i class="fas fa-shopping-bag w-5 text-blue-500"></i> Tienda
+            </a>
+            <a href="books.html" class="flex items-center gap-3 text-gray-400 hover:text-white p-3 rounded-xl hover:bg-gray-800 transition">
+                <i class="fas fa-bookmark w-5"></i> Mis Libros
+            </a>
+        </nav>
 
-        <div class="search-container flex items-center px-4 py-3 shadow-sm mx-auto w-full relative">
-            <i class="fas fa-search text-gray-500 text-lg"></i>
-            <input type="text" id="searchInput" class="bg-transparent border-none outline-none text-gray-800 placeholder-gray-500 ml-3 w-full font-medium" placeholder="Buscar en la librería...">
+        <div class="mt-auto border-t border-gray-800 pt-6 space-y-4">
+            <a href="profile.html" class="flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-800 rounded-xl transition">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold">👤</div>
+                <div>
+                    <p id="sidebar-name" class="text-sm font-bold">Cargando...</p>
+                    <p class="text-[10px] text-gray-500 uppercase font-black">Configuración</p>
+                </div>
+            </a>
+            <button onclick="logout()" class="flex items-center gap-3 text-red-400 hover:text-red-300 p-3 w-full hover:bg-red-500/10 rounded-xl transition">
+                <i class="fas fa-sign-out-alt"></i> Salir de la cuenta
+            </button>
         </div>
-    </header>
+    </aside>
 
-    <nav class="container mx-auto px-4 max-w-6xl mt-4">
-        <div class="flex gap-3 overflow-x-auto pb-2 hide-scroll">
-            <button onclick="switchTab('Todos')" id="tab-Todos" class="tab-btn tab-active whitespace-nowrap">Todo</button>
-            <button onclick="switchTab('Ficción')" id="tab-Ficción" class="tab-btn tab-inactive whitespace-nowrap">Ficción</button>
-            <button onclick="switchTab('No Ficción')" id="tab-No Ficción" class="tab-btn tab-inactive whitespace-nowrap">No Ficción</button>
-            <button onclick="switchTab('Cómic')" id="tab-Cómic" class="tab-btn tab-inactive whitespace-nowrap">Cómic</button>
-        </div>
+    <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a1e]/90 backdrop-blur-md border-t border-gray-800 px-6 py-3 flex justify-between items-center z-50 md:hidden">
+        <a href="dashboard.html" class="text-blue-500 flex flex-col items-center gap-1"><i class="fas fa-shopping-bag text-xl"></i></a>
+        <a href="books.html" class="text-gray-400 flex flex-col items-center gap-1"><i class="fas fa-bookmark text-xl"></i></a>
+        <a href="profile.html" class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white cursor-pointer">👤</a>
+        <button onclick="logout()" class="text-red-400 flex flex-col items-center gap-1"><i class="fas fa-sign-out-alt text-xl"></i></button>
     </nav>
 
-    <div class="container mx-auto px-4 max-w-6xl mt-6">
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[24px] p-6 flex items-center justify-between relative overflow-hidden shadow-lg shadow-blue-900/50">
-            <div class="z-10">
-                <h2 class="text-xl font-bold text-white mb-1">Escanear Libro</h2>
-                <p class="text-blue-100 text-xs mb-3">Añade rápido con la cámara</p>
-                <a href="scan.html" class="bg-white text-blue-600 text-xs font-bold px-4 py-2 rounded-full shadow-md hover:bg-gray-100 transition">
-                    <i class="fas fa-barcode mr-1"></i> Cámara
-                </a>
+    <div class="main-content">
+        <header class="p-6 container mx-auto max-w-6xl">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-4">
+                    <a href="profile.html" class="md:hidden w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center cursor-pointer text-white">👤</a>
+                    <div>
+                        <h1 class="text-2xl font-black">Hola, <span id="header-name" class="text-blue-500">Lector</span></h1>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Miembro Premium</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 bg-[#1a1a1e] p-2 px-4 rounded-2xl border border-gray-800">
+                    <i class="fas fa-shopping-cart text-blue-500"></i>
+                    <span id="cart-count" class="font-bold">0</span>
+                </div>
             </div>
-            <i class="fas fa-book text-8xl text-white opacity-10 absolute -right-4 -bottom-4 rotate-12"></i>
-        </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-800 shadow-2xl">
+                <div class="md:col-span-1">
+                    <select id="category-select" onchange="searchByCategory()" class="w-full category-select text-sm font-bold h-full">
+                        <option value="">Categorías</option>
+                        <option value="horror">Terror 👻</option>
+                        <option value="science_fiction">Ciencia Ficción 🚀</option>
+                        <option value="fantasy" selected>Fantasía 🧙‍♂️</option>
+                        <option value="mystery">Misterio 🔍</option>
+                        <option value="romance">Romance ❤️</option>
+                    </select>
+                </div>
+                <div class="md:col-span-3 flex gap-2">
+                    <div class="relative flex-1">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                        <input type="text" id="api-search" placeholder="Buscar libros por título o autor..." 
+                               class="w-full bg-[#121214] border border-gray-700 rounded-xl py-3 pl-12 pr-4 focus:border-blue-500 outline-none transition">
+                    </div>
+                    <button onclick="searchBooks()" class="bg-blue-600 hover:bg-blue-700 px-6 rounded-xl font-bold transition flex items-center gap-2">
+                        <span id="btn-text">Buscar</span>
+                        <div id="loader" class="loader"></div>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-6 max-w-6xl pb-10">
+            <h3 id="results-title" class="text-xl font-bold mb-6 flex items-center gap-2">
+                <i class="fas fa-sparkles text-yellow-500"></i> Libros Destacados
+            </h3>
+            <div id="api-results-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"></div>
+        </main>
     </div>
 
-    <main class="container mx-auto px-4 max-w-6xl mt-10 space-y-12">
-        
-        <section>
-            <h3 id="main-section-title" class="text-xl font-bold mb-4 pl-1 flex items-center gap-2">
-                <span class="bg-purple-500 w-1 h-6 rounded-full inline-block"></span>
-                Explorar: <span id="current-cat-name" class="text-purple-300 ml-1">Todo</span>
-            </h3>
-            
-            <div class="relative group">
-                <button onclick="scrollGrid('left', 'carrusel-main')" class="nav-arrow nav-left hidden md:flex"><i class="fas fa-chevron-left"></i></button>
-                
-                <div id="carrusel-main" class="flex gap-4 overflow-x-auto hide-scroll scroll-smooth pb-4 px-1 snap-x">
-                    </div>
-                
-                <button onclick="scrollGrid('right', 'carrusel-main')" class="nav-arrow nav-right hidden md:flex"><i class="fas fa-chevron-right"></i></button>
-            </div>
-        </section>
-
-        <section>
-            <h3 class="text-xl font-bold mb-4 pl-1 flex items-center gap-2">
-                <span class="bg-blue-500 w-1 h-6 rounded-full inline-block"></span>
-                Continuar Leyendo
-            </h3>
-            
-            <div class="relative group">
-                <button onclick="scrollGrid('left', 'carrusel-reading')" class="nav-arrow nav-left hidden md:flex"><i class="fas fa-chevron-left"></i></button>
-                <div id="carrusel-reading" class="flex gap-4 overflow-x-auto hide-scroll scroll-smooth pb-4 px-1 snap-x">
-                    </div>
-                <button onclick="scrollGrid('right', 'carrusel-reading')" class="nav-arrow nav-right hidden md:flex"><i class="fas fa-chevron-right"></i></button>
-            </div>
-        </section>
-
-
-        <section>
-            <h3 class="text-xl font-bold mb-4 pl-1 flex items-center gap-2">
-                <span class="bg-orange-500 w-1 h-6 rounded-full inline-block"></span>
-                Novedades
-            </h3>
-            
-            <div class="relative group">
-                <button onclick="scrollGrid('left', 'carrusel-news')" class="nav-arrow nav-left hidden md:flex"><i class="fas fa-chevron-left"></i></button>
-                <div id="carrusel-news" class="flex gap-4 overflow-x-auto hide-scroll scroll-smooth pb-4 px-1 snap-x">
-                    </div>
-                <button onclick="scrollGrid('right', 'carrusel-news')" class="nav-arrow nav-right hidden md:flex"><i class="fas fa-chevron-right"></i></button>
-            </div>
-        </section>
-
-    </main>
-
-    <div id="product-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-4xl rounded-xl shadow-2xl relative text-gray-800 animate-[fadeIn_0.3s_ease-out]">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-900 z-10 text-2xl"><i class="fas fa-times"></i></button>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
-                <div class="p-6 bg-gray-50 flex items-center justify-center rounded-l-xl">
-                    <img id="modal-img" src="" class="shadow-xl max-w-[160px] rounded transform hover:scale-105 transition duration-500">
+    <div id="product-modal" class="fixed inset-0 z-[60] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl relative text-gray-800">
+            <button onclick="closeModal('product-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 z-10 text-2xl"><i class="fas fa-times"></i></button>
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/2 bg-gray-100 p-8 flex items-center justify-center">
+                    <img id="modal-img" src="" class="shadow-2xl rounded-lg max-h-72 object-cover">
                 </div>
-                <div class="p-6 md:p-8 flex flex-col">
-                    <span id="modal-cat" class="text-xs font-bold text-orange-600 uppercase mb-1">Categoría</span>
-                    <h2 id="modal-title" class="text-2xl font-bold text-gray-900 mb-1">Título</h2>
-                    <p id="modal-author" class="text-gray-600 mb-4 font-medium">Autor</p>
-                    <p id="modal-desc" class="text-sm text-gray-600 mb-6 flex-1 line-clamp-4">Descripción...</p>
-                    <div class="mt-auto border-t border-gray-100 pt-4">
-                        <span id="modal-price" class="text-3xl font-bold text-orange-600 block mb-3">Precio</span>
-                        <div class="flex gap-3">
-                            <button class="flex-1 btn-orange py-3 rounded-lg font-bold shadow">Añadir</button>
-                            <button class="flex-1 btn-outline-orange bg-white py-3 rounded-lg font-bold">Reservar</button>
-                        </div>
+                <div class="md:w-1/2 p-10">
+                    <span class="text-blue-600 font-black text-[10px] uppercase mb-2 block">Versión Digital</span>
+                    <h2 id="modal-title" class="text-2xl font-black mb-2"></h2>
+                    <p id="modal-author" class="text-gray-500 text-sm mb-6"></p>
+                    <div class="flex items-center justify-between mt-auto">
+                        <span class="text-3xl font-bold">9.95€</span>
+                        <button id="buy-btn" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-blue-700 transition">Comprar</button>
                     </div>
                 </div>
             </div>
@@ -178,171 +126,149 @@
     </div>
 
     <script>
-        // === 1. CARGAR PERFIL DE USUARIO ===
-        async function loadUserProfile() {
-            try {
-                // Hacemos la petición a la API de usuario
-                const response = await fetch('/api/user', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include' 
-                });
+    // --- CONFIGURACIÓN ---
+    // Si tu proyecto está en una carpeta (ej: localhost/mi-proyecto/public), ajusta esto:
+    const API_BASE_URL = '/api'; 
 
-                if (!response.ok) {
-                    throw new Error('No autorizado');
+    let myBooks = JSON.parse(localStorage.getItem('myBooks')) || [];
+    let cartCount = 0;
+
+    // --- 1. CARGAR PERFIL REAL (BACKEND) ---
+    async function loadUserProfile() {
+        try {
+            // Llamamos a la ruta '/api/user' que definiste en tu api.php
+            const response = await fetch(`${API_BASE_URL}/user`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    // Esto es vital para que Laravel sepa que es una petición AJAX
+                    'X-Requested-With': 'XMLHttpRequest' 
                 }
+            });
 
+            if (response.status === 401) {
+                // Si Laravel dice "No autorizado" (401), mandamos al login
+                alert("Tu sesión ha expirado. Por favor ingresa nuevamente.");
+                window.location.href = 'index.html'; // O login.html
+                return;
+            }
+
+            if (response.ok) {
                 const userData = await response.json();
-
-                // Actualizamos el nombre en el saludo
-                const greetingElement = document.querySelector('h1.font-bold'); 
-                if (greetingElement) {
-                    greetingElement.innerText = `Hola, ${userData.name}`; 
-                }
-
-                // Cargamos estadísticas (si existen en el HTML)
-                loadDashboardStats(); 
-
-            } catch (error) {
-                console.error("Error cargando perfil:", error);
-                // Si falla (sesión expirada), redirigir al login
-                // window.location.href = 'index.html'; // Descomenta esta línea cuando tu login esté listo
-            }
-        }
-
-        // === 2. CARGAR ESTADÍSTICAS (La función que faltaba) ===
-        async function loadDashboardStats() {
-            try {
-                const response = await fetch('/api/dashboard-stats', {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' },
-                    credentials: 'include'
-                });
-
-                if (!response.ok) return; // Si falla silenciosamente, no pasa nada
-
-                const stats = await response.json();
                 
-                // Solo actualizamos si los elementos existen en el HTML
-                if(document.getElementById('count-books')) 
-                    document.getElementById('count-books').innerText = stats.books_count;
-                    
-                if(document.getElementById('count-authors')) 
-                    document.getElementById('count-authors').innerText = stats.authors_count;
-                    
-                if(document.getElementById('count-reading')) 
-                    document.getElementById('count-reading').innerText = stats.reading_now;
-                    
-                if(document.getElementById('count-categories')) 
-                    document.getElementById('count-categories').innerText = stats.categories_count;
-
-            } catch (error) {
-                console.log("No se pudieron cargar stats (¿Usuario no logueado?)");
+                // Actualizamos el DOM con los datos REALES de la base de datos
+                document.getElementById('header-name').innerText = userData.name;
+                document.getElementById('sidebar-name').innerText = userData.name;
+                
+                // Opcional: Si tienes el email, podrías mostrarlo también
+                // console.log("Usuario conectado:", userData);
             }
+
+        } catch (error) {
+            console.error("Error al conectar con el servidor:", error);
         }
+    }
 
-        // Ejecutar al cargar la página
-        document.addEventListener('DOMContentLoaded', loadUserProfile);
+    // --- 2. LOGOUT REAL (BACKEND) ---
+    async function logout() {
+        if(!confirm("¿Estás seguro de que quieres cerrar sesión?")) return;
 
-        // === DATOS DE EJEMPLO PARA VISUALIZACIÓN ===
-        const mainLibraryData = [
-            { id: 1, title: "Dune", author: "Frank Herbert", price: "24,90€", img: "https://covers.openlibrary.org/b/id/12697887-L.jpg", cat: "Ficción" },
-            { id: 2, title: "Sapiens", author: "Yuval N. Harari", price: "22,90€", img: "https://covers.openlibrary.org/b/id/8393663-L.jpg", cat: "No Ficción" },
-            { id: 3, title: "Watchmen", author: "Alan Moore", price: "35,00€", img: "https://covers.openlibrary.org/b/id/12555620-L.jpg", cat: "Cómic" },
-            { id: 4, title: "1984", author: "George Orwell", price: "9,95€", img: "https://covers.openlibrary.org/b/id/12632200-L.jpg", cat: "Ficción" },
-            { id: 5, title: "Steve Jobs", author: "Walter Isaacson", price: "18,50€", img: "https://covers.openlibrary.org/b/id/7342523-L.jpg", cat: "No Ficción" },
-            { id: 6, title: "Maus", author: "Art Spiegelman", price: "21,00€", img: "https://covers.openlibrary.org/b/id/10582907-L.jpg", cat: "Cómic" },
-            { id: 7, title: "El Quijote", author: "Cervantes", price: "15,00€", img: "https://covers.openlibrary.org/b/id/10565012-L.jpg", cat: "Ficción" },
-            { id: 8, title: "Cosmos", author: "Carl Sagan", price: "20,00€", img: "https://covers.openlibrary.org/b/id/12628464-L.jpg", cat: "No Ficción" }
-        ];
+        try {
+            // Intentamos cerrar sesión en el servidor
+            await fetch('/logout', { 
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    // Si usas tokens CSRF en meta tag, añádelo aquí.
+                    // Si usas Sanctum/API puro, esto suele bastar.
+                }
+            });
+        } catch (e) {
+            console.log("Cerrando sesión localmente...");
+        } finally {
+            // Redirigimos al usuario fuera pase lo que pase
+            window.location.href = 'index.html'; 
+        }
+    }
 
-        const readingData = [
-            { id: 101, title: "Negra nit", author: "Chris Offutt", price: "21,50€", img: "https://covers.openlibrary.org/b/id/8259449-L.jpg", cat: "Novela Negra" },
-            { id: 102, title: "Clean Code", author: "Robert C. Martin", price: "35,00€", img: "https://covers.openlibrary.org/b/id/12555620-L.jpg", cat: "Tech" },
-            { id: 103, title: "Dune Messiah", author: "Frank Herbert", price: "19,00€", img: "https://covers.openlibrary.org/b/id/14553229-L.jpg", cat: "Ficción" }
-        ];
+    // --- LÓGICA DE TIENDA (API DE LIBROS - ESTO SE MANTIENE IGUAL) ---
+    async function searchBooks() {
+        const query = document.getElementById('api-search').value;
+        if(!query) return;
+        toggleLoader(true);
+        // Nota: Aquí sigues usando OpenLibrary. En el futuro cambiarás esto a `${API_BASE_URL}/books`
+        const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=10`);
+        const data = await res.json();
+        renderBooks(data.docs);
+        toggleLoader(false);
+    }
 
-        const newsData = [
-            { id: 201, title: "Todos los cuentos", author: "Clarice Lispector", price: "24,50€", img: "https://covers.openlibrary.org/b/id/10603763-L.jpg", cat: "Cuentos" },
-            { id: 202, title: "La prueba", author: "Eliza Barry", price: "19,90€", img: "https://covers.openlibrary.org/b/id/12547191-L.jpg", cat: "Novedad" },
-            { id: 203, title: "Hermanas raras", author: "Bodine Drake", price: "18,00€", img: "https://covers.openlibrary.org/b/id/12658932-L.jpg", cat: "Terror" },
-            { id: 204, title: "Detectives", author: "Mar Benegas", price: "12,95€", img: "https://covers.openlibrary.org/b/id/12826015-L.jpg", cat: "Infantil" }
-        ];
+    async function searchByCategory() {
+        const cat = document.getElementById('category-select').value;
+        if(!cat) return;
+        toggleLoader(true);
+        const res = await fetch(`https://openlibrary.org/subjects/${cat}.json?limit=10`);
+        const data = await res.json();
+        renderBooks(data.works);
+        toggleLoader(false);
+    }
 
-        // RENDERIZAR CUALQUIER CARRUSEL
-        function renderCarrusel(containerId, data) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
+    function renderBooks(books) {
+        const grid = document.getElementById('api-results-grid');
+        grid.innerHTML = books.map(book => {
+            const cover = book.cover_i || book.cover_id ? `https://covers.openlibrary.org/b/id/${book.cover_i || book.cover_id}-M.jpg` : 'https://via.placeholder.com/150x220?text=No+Cover';
+            const author = book.author_name ? book.author_name[0] : (book.authors ? book.authors[0].name : 'Autor desconocido');
+            // Escapamos comillas para evitar errores en el HTML
+            const safeTitle = book.title.replace(/"/g, "&quot;");
+            const bookData = JSON.stringify({title: safeTitle, author, img: cover}).replace(/"/g, "&quot;");
             
-            data.forEach(book => {
-                const jsonBook = JSON.stringify(book).replace(/"/g, "&quot;");
-                container.innerHTML += `
-                    <div onclick="openModal(this)" data-book="${jsonBook}" class="book-card cursor-pointer group flex flex-col flex-shrink-0 relative snap-start">
-                        <div class="h-44 overflow-hidden relative bg-gray-200">
-                            <img src="${book.img}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                            <div class="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm">
-                                ${book.cat}
-                            </div>
-                        </div>
-                        <div class="p-3 flex flex-col flex-1">
-                            <h3 class="font-bold text-sm text-gray-900 leading-tight mb-1 line-clamp-1">${book.title}</h3>
-                            <p class="text-xs text-gray-500 mb-2 truncate">${book.author}</p>
-                            <div class="mt-auto flex justify-between items-center border-t border-gray-100 pt-2">
-                                <span class="font-bold text-orange-600 text-sm">${book.price}</span>
-                                <i class="fas fa-plus-circle text-gray-300 hover:text-orange-500 transition"></i>
-                            </div>
-                        </div>
+            return `
+                <div onclick='openProductModal(${bookData})' class="book-card cursor-pointer group animate-[fadeIn_0.3s]">
+                    <img src="${cover}" class="w-full h-56 object-cover group-hover:scale-105 transition">
+                    <div class="p-4">
+                        <h4 class="font-bold text-xs truncate">${book.title}</h4>
+                        <p class="text-[10px] text-gray-500">${author}</p>
                     </div>
-                `;
-            });
-        }
+                </div>
+            `;
+        }).join('');
+    }
 
-        // CONTROL DE TABS (Solo afecta a la primera fila)
-        function switchTab(catName) {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('tab-active');
-                btn.classList.add('tab-inactive');
-            });
-            document.getElementById(`tab-${catName}`).classList.remove('tab-inactive');
-            document.getElementById(`tab-${catName}`).classList.add('tab-active');
-            
-            document.getElementById('current-cat-name').textContent = catName;
+    function openProductModal(book) {
+        document.getElementById('modal-img').src = book.img;
+        document.getElementById('modal-title').innerText = book.title;
+        document.getElementById('modal-author').innerText = book.author;
+        
+        // Botón de comprar
+        document.getElementById('buy-btn').onclick = () => {
+            // AQUÍ ES DONDE EN EL FUTURO ENVIARÁS LA COMPRA A TU API LARAVEL
+            if(!myBooks.find(b => b.title === book.title)) {
+                myBooks.push(book);
+                localStorage.setItem('myBooks', JSON.stringify(myBooks));
+                cartCount++;
+                document.getElementById('cart-count').innerText = cartCount;
+                alert("¡Libro añadido a tu biblioteca personal!");
+            } else {
+                alert("Ya posees este libro.");
+            }
+            closeModal('product-modal');
+        };
+        document.getElementById('product-modal').classList.remove('hidden');
+    }
 
-            // Filtro
-            const filteredData = catName === 'Todos' ? mainLibraryData : mainLibraryData.filter(b => b.cat === catName);
-            renderCarrusel('carrusel-main', filteredData);
-        }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    
+    function toggleLoader(show) { 
+        document.getElementById('loader').style.display = show ? 'block' : 'none'; 
+        document.getElementById('btn-text').style.display = show ? 'none' : 'block';
+    }
 
-        // SCROLL
-        function scrollGrid(direction, containerId) {
-            const container = document.getElementById(containerId);
-            direction === 'left' ? container.scrollLeft -= 300 : container.scrollLeft += 300;
-        }
-
-        // MODAL
-        function openModal(element) {
-            const bookData = JSON.parse(element.getAttribute('data-book'));
-            document.getElementById('modal-img').src = bookData.img;
-            document.getElementById('modal-title').textContent = bookData.title;
-            document.getElementById('modal-author').textContent = bookData.author;
-            document.getElementById('modal-price').textContent = bookData.price;
-            document.getElementById('modal-cat').textContent = bookData.cat;
-            document.getElementById('modal-desc').textContent = `Sinopsis detallada de ${bookData.title}...`;
-            document.getElementById('product-modal').classList.remove('hidden');
-        }
-
-        function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
-        document.getElementById('product-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
-        function logout() { window.location.href = 'index.html'; }
-
-        // INICIALIZACIÓN
-        switchTab('Todos'); 
-        renderCarrusel('carrusel-reading', readingData); 
-        renderCarrusel('carrusel-news', newsData); 
-
-    </script>
+    // --- INICIALIZACIÓN ---
+    window.onload = () => {
+        loadUserProfile(); // <--- AHORA ESTO LLAMA A LARAVEL
+        searchByCategory(); 
+    };
+</script>
 </body>
 </html>

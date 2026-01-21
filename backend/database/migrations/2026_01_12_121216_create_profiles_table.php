@@ -10,18 +10,20 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
-        Schema::create('profiles', function (Blueprint $table) {
-            $table->id();
-            
-            // Muy bien el uso de unique() para garantizar integridad
-            // y permitir el uso seguro de firstOrCreate.
-            $table->string('name')->unique(); 
-            
-            $table->text('description')->nullable(); 
-            $table->timestamps();
-        });
-    }
+{
+    Schema::create('profiles', function (Blueprint $table) {
+        $table->id();
+        
+        // Relación con el usuario (si borras usuario, se borra perfil)
+        $table->foreignId('user_id')->constrained()->onDelete('cascade')->unique();
+
+        // Solo guardamos Apellido y Teléfono
+        $table->string('surname')->nullable(); 
+        $table->string('phone')->nullable();   
+
+        $table->timestamps();
+    });
+}
 
     /**
      * Reverse the migrations.

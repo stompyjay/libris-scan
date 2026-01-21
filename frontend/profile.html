@@ -3,142 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Perfil - Biblioteca</title>
+    <title>Mi Perfil - eBookStore</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-[#121214] text-white font-sans min-h-screen">
 
-    <nav class="bg-blue-600 p-4 text-white shadow-md mb-8">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="dashboard.html" class="font-bold hover:underline">⬅ Volver al Dashboard</a>
-            <h1 class="text-xl font-bold">👤 Mi Perfil</h1>
-            <div></div> </div>
-    </nav>
+    <div class="max-w-4xl mx-auto p-6">
+        <div class="flex items-center justify-between mb-10">
+            <a href="dashboard.html" class="flex items-center gap-2 text-gray-400 hover:text-white transition">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+            <h1 class="text-xl font-bold text-blue-500">Configuración de Cuenta</h1>
+        </div>
 
-    <div class="container mx-auto px-4 max-w-lg">
-        <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             
-            <div class="text-center mb-6">
-                <div class="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 text-3xl">
-                    👤
+            <div class="bg-[#1a1a1e] p-8 rounded-[2.5rem] border border-gray-800 text-center h-fit">
+                <div class="relative inline-block mb-4">
+                    <div class="w-32 h-32 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-4xl shadow-2xl">
+                        👤
+                    </div>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-800" id="display-name">Cargando...</h2>
-                <p class="text-gray-500 text-sm">Gestiona tu información personal</p>
+                <h2 id="display-name" class="text-2xl font-black mb-1">Cargando...</h2>
+                <p class="text-gray-500 text-sm mb-6">Usuario Registrado</p>
+                
+                <div class="bg-blue-600/10 border border-blue-600/20 rounded-2xl p-4">
+                    <p class="text-blue-500 font-bold text-xs uppercase tracking-widest mb-1">Estado</p>
+                    <p class="font-bold">Activo</p>
+                </div>
             </div>
 
-            <form id="profileForm" class="space-y-4">
-                
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Nombre</label>
-                    <input type="text" id="first_name" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Tu nombre">
-                </div>
+            <div class="md:col-span-2 bg-[#1a1a1e] p-8 rounded-[2.5rem] border border-gray-800">
+                <form id="profile-form" class="space-y-6">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-2">Nombre</label>
+                            <input type="text" id="input-name" class="w-full bg-[#121214] border border-gray-700 rounded-2xl p-4 focus:border-blue-500 outline-none transition text-white" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-2">Email (No editable)</label>
+                            <input type="email" id="input-email" class="w-full bg-[#0a0a0c] border border-gray-800 text-gray-400 rounded-2xl p-4 outline-none cursor-not-allowed" readonly>
+                        </div>
+                    </div>
 
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Apellido</label>
-                    <input type="text" id="last_name" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Tu apellido">
-                </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-2">Apellido</label>
+                            <input type="text" id="input-surname" class="w-full bg-[#121214] border border-gray-700 rounded-2xl p-4 focus:border-blue-500 outline-none transition text-white" placeholder="Ej: Pérez">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-2">Teléfono</label>
+                            <input type="text" id="input-phone" class="w-full bg-[#121214] border border-gray-700 rounded-2xl p-4 focus:border-blue-500 outline-none transition text-white" placeholder="Ej: +34 600...">
+                        </div>
+                    </div>
 
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Teléfono</label>
-                    <input type="text" id="phone" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="+34 600 000 000">
-                </div>
-                
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Biografía</label>
-                    <textarea id="bio" rows="3" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Algo sobre ti..."></textarea>
-                </div>
+                    <div class="pt-4 flex gap-4">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-600/20 transition transform active:scale-95">
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition duration-300">
-                    💾 Guardar Cambios
-                </button>
-
-            </form>
+        <div class="mt-8 bg-red-500/5 border border-red-500/10 p-8 rounded-[2.5rem]">
+            <h3 class="text-red-500 font-bold mb-4">Zona de Peligro</h3>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-bold text-sm">Cerrar sesión</p>
+                    <p class="text-gray-500 text-xs">Tendrás que volver a entrar con tu contraseña.</p>
+                </div>
+                <button onclick="logout()" class="text-red-500 font-bold text-sm hover:underline cursor-pointer">Salir ahora</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const API_URL = '/api/profile';
+    const API_URL = '/api/profile';
 
-        // Helper para obtener el Token CSRF de forma segura
-        function getCsrfToken() {
-            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-            return match ? decodeURIComponent(match[1]) : null;
-        }
+    function getCookie(name) {
+        let value = "; " + document.cookie;
+        let parts = value.split("; " + name + "=");
+        if (parts.length === 2) return parts.pop().split(";").shift();
+        return ""; 
+    }
 
-        // 1. CARGAR DATOS (GET)
-        async function loadProfile() {
-            try {
-                const response = await fetch(API_URL);
-                
-                if (response.status === 401) {
-                    window.location.href = 'login.html';
-                    return;
+    // 1. CARGAR DATOS (GET)
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
+            });
 
-                // OJO: Asumo que el controlador devuelve el objeto perfil directamente
-                // o dentro de { data: ... }. Ajustamos aquí:
+            if (response.status === 401) {
+                window.location.href = 'index.html'; 
+                return;
+            }
+
+            if (response.ok) {
                 const data = await response.json();
-                const profile = data.data || data; 
+                console.log("Datos recibidos:", data); // Para depurar
 
-                // Rellenar inputs
-                // IMPORTANTE: Asegúrate de que estos nombres coinciden con tu BBDD
-                document.getElementById('first_name').value = profile.first_name || ''; 
-                document.getElementById('last_name').value  = profile.last_name || '';
-                document.getElementById('phone').value      = profile.phone || '';
-                document.getElementById('bio').value        = profile.bio || '';
-
-                // Actualizar el título con el nombre
-                if(profile.first_name) {
-                    document.getElementById('display-name').textContent = `${profile.first_name} ${profile.last_name || ''}`;
-                } else {
-                    document.getElementById('display-name').textContent = "Perfil de Usuario";
-                }
-
-            } catch (error) {
-                console.error("Error cargando perfil:", error);
-                alert("Error al cargar los datos.");
+                // Rellenar formulario
+                document.getElementById('input-name').value = data.name || ''; 
+                document.getElementById('display-name').innerText = data.name || 'Usuario';
+                
+                // IMPORTANTE: Si data.email viene null, es culpa del Modelo User.php
+                document.getElementById('input-email').value = data.email || ''; 
+                
+                document.getElementById('input-surname').value = data.apellido || ''; 
+                document.getElementById('input-phone').value = data.telefono || '';
             }
+        } catch (error) {
+            console.error('Error de red:', error);
+        }
+    });
+
+    // 2. GUARDAR CAMBIOS (PUT)
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const btn = e.target.querySelector('button');
+        const textoOriginal = btn.innerText;
+        btn.innerText = "Guardando...";
+        btn.disabled = true;
+
+        // Construimos el objeto a enviar
+        const datos = {
+            name: document.getElementById('input-name').value,
+            apellido: document.getElementById('input-surname').value,
+            telefono: document.getElementById('input-phone').value
+        };
+
+        // Solo añadimos el email al envío si TIENE ALGO ESCRITO.
+        // Si está vacío (porque no cargó), mejor no enviarlo para evitar errores de validación.
+        const emailVal = document.getElementById('input-email').value;
+        if(emailVal && emailVal.trim() !== "") {
+            datos.email = emailVal;
         }
 
-        // 2. GUARDAR DATOS (PUT)
-        document.getElementById('profileForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        try {
+            const xsrfToken = decodeURIComponent(getCookie('XSRF-TOKEN'));
 
-            // Recogemos los datos usando los nombres estándar en inglés
-            const formData = {
-                first_name: document.getElementById('first_name').value,
-                last_name:  document.getElementById('last_name').value,
-                phone:      document.getElementById('phone').value,
-                bio:        document.getElementById('bio').value
-            };
+            const response = await fetch(API_URL, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': xsrfToken 
+                },
+                body: JSON.stringify(datos)
+            });
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-XSRF-TOKEN': getCsrfToken() // Token vital para seguridad
-                    },
-                    body: JSON.stringify(formData)
-                });
+            const resultado = await response.json();
 
-                if (response.ok) {
-                    alert("¡Perfil actualizado con éxito!");
-                    loadProfile(); // Recargamos para ver cambios reflejados
-                } else {
-                    const errorData = await response.json();
-                    alert("Error: " + (errorData.message || "Revisa los campos"));
+            if (response.ok) {
+                alert('¡Datos guardados correctamente!');
+                document.getElementById('display-name').innerText = datos.name;
+            } else {
+                console.error("Error del servidor:", resultado);
+                let errorMsg = resultado.message || "Error desconocido";
+                if (resultado.errors) {
+                    // Convertir objeto de errores a texto legible
+                    errorMsg = Object.values(resultado.errors).flat().join('\n');
                 }
-            } catch (error) {
-                console.error(error);
-                alert("Error de conexión al guardar.");
+                alert('No se pudo guardar:\n' + errorMsg);
             }
-        });
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión.');
+        } finally {
+            btn.innerText = textoOriginal;
+            btn.disabled = false;
+        }
+    });
 
-        // Iniciar carga
-        loadProfile();
-
+    async function logout() {
+        if(!confirm("¿Seguro que quieres cerrar sesión?")) return;
+        try {
+            const xsrfToken = decodeURIComponent(getCookie('XSRF-TOKEN'));
+            await fetch('/logout', { 
+                method: 'POST', 
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': xsrfToken
+                } 
+            });
+        } catch(e) {}
+        window.location.href = 'index.html';
+    }
     </script>
 </body>
 </html>
