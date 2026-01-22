@@ -5,169 +5,122 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Libros - Biblioteca</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-[#0f0f12] text-gray-300 font-sans min-h-screen">
 
-    <nav class="bg-blue-600 p-4 text-white shadow-md mb-8">
+    <nav class="bg-[#1a1a1e] border-b border-gray-800 p-4 mb-8 sticky top-0 z-50">
         <div class="container mx-auto flex justify-between items-center">
-            <a href="dashboard.html" class="font-bold hover:underline">⬅ Volver al Dashboard</a>
-            <h1 class="text-xl font-bold">📖 Mis Libros</h1>
-            <a href="scan.html" class="bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-sm transition">
-                + Añadir Nuevo
+            <a href="dashboard.html" class="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+            <h1 class="text-lg font-bold text-white"><i class="fas fa-book text-blue-500 mr-2"></i>Mis Libros</h1>
+            <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition">
+                + Comprar Más
             </a>
         </div>
     </nav>
 
     <div class="container mx-auto px-4">
         
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-[#1a1a1e] rounded-2xl shadow-xl overflow-hidden border border-gray-800">
             <table class="min-w-full leading-normal">
                 <thead>
                     <tr>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Título
+                        <th class="px-5 py-4 border-b border-gray-800 bg-black/40 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                            Libro
                         </th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Autor(es)
+                        <th class="px-5 py-4 border-b border-gray-800 bg-black/40 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                            Autor
                         </th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Categoría
-                        </th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th class="px-5 py-4 border-b border-gray-800 bg-black/40 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
                             Estado
                         </th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th class="px-5 py-4 border-b border-gray-800 bg-black/40 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
                             Acciones
                         </th>
                     </tr>
                 </thead>
                 <tbody id="books-table-body">
-                    <tr>
-                        <td colspan="5" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">
-                            Cargando libros...
-                        </td>
-                    </tr>
-                </tbody>
+                    </tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // CONFIGURACIÓN
-        const API_URL = '/api/books'; // Corregido: 'books' en inglés
         const tableBody = document.getElementById('books-table-body');
 
-        // Función para obtener Token CSRF (Necesario para borrar)
-        function getCsrfToken() {
-            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-            return match ? decodeURIComponent(match[1]) : null;
-        }
+        // --- 1. CARGAR LIBROS DESDE MEMORIA (LocalStorage) ---
+        function loadBooks() {
+            // Recuperamos la lista guardada en shop.html
+            const myBooks = JSON.parse(localStorage.getItem('myBooks')) || [];
+            
+            tableBody.innerHTML = '';
 
-        // --- 1. CARGAR LIBROS ---
-        async function loadBooks() {
-            try {
-                // Al usar middleware 'web', las cookies viajan solas. No hace falta header Auth.
-                const response = await fetch(API_URL);
-                
-                // Si la sesión expiró
-                if (response.status === 401 || response.status === 419) {
-                    window.location.href = 'login.html'; // Redirigir al login
-                    return;
-                }
-
-                const json = await response.json(); 
-                
-                // Laravel con paginate() devuelve los datos dentro de .data
-                // Si usas ->get() en el controlador, sería directamente 'json'
-                const books = json.data ? json.data : json;
-
-                tableBody.innerHTML = '';
-
-                if (books.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4">No tienes libros aún. ¡Ve a escanear uno!</td></tr>`;
-                    return;
-                }
-
-                books.forEach(book => {
-                    // --- CORRECCIÓN DE AUTORES ---
-                    // Como ahora es un array, extraemos los nombres y los unimos con comas
-                    let authorNames = 'Desconocido';
-                    if (book.authors && book.authors.length > 0) {
-                        authorNames = book.authors.map(a => a.name).join(', ');
-                    }
-
-                    // --- CORRECCIÓN DE CATEGORÍA ---
-                    let categoryName = book.category ? book.category.name : 'Sin categoría';
-
-                    // --- COLORES DE ESTADO ---
-                    let statusColor = 'bg-gray-200 text-gray-700'; // Default: pendiente
-                    let statusText = 'PENDIENTE';
-                    
-                    if(book.status === 'reading') {
-                        statusColor = 'bg-blue-200 text-blue-800';
-                        statusText = 'LEYENDO';
-                    }
-                    else if(book.status === 'completed') {
-                        statusColor = 'bg-green-200 text-green-800';
-                        statusText = 'LEÍDO';
-                    }
-
-                    const row = `
-                        <tr>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <p class="text-gray-900 font-bold">${book.title}</p>
-                            </td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <p class="text-gray-900">${authorNames}</p>
-                            </td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <span class="text-gray-600 bg-gray-100 px-2 py-1 rounded text-xs">${categoryName}</span>
-                            </td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <span class="relative inline-block px-3 py-1 font-semibold leading-tight rounded-full ${statusColor}">
-                                    <span class="relative text-xs">${statusText}</span>
-                                </span>
-                            </td>
-                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                <button onclick="deleteBook(${book.id})" class="text-red-600 hover:text-red-900 font-bold ml-2">Borrar</button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-
-            } catch (error) {
-                console.error(error);
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 p-4">Error cargando libros. Revisa la consola.</td></tr>`;
+            if (myBooks.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center p-8 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-3 block opacity-50"></i>
+                            No tienes libros aún. ¡Ve al Dashboard a comprar algunos!
+                        </td>
+                    </tr>`;
+                return;
             }
+
+            // Recorremos los libros y creamos las filas
+            myBooks.forEach((book, index) => {
+                // Definimos valores por defecto si faltan
+                const author = book.author || 'Desconocido';
+                const cover = book.cover || 'https://via.placeholder.com/50x75';
+                
+                // HTML de la fila
+                const row = `
+                    <tr class="hover:bg-white/5 transition border-b border-gray-800/50">
+                        <td class="px-5 py-4 text-sm">
+                            <div class="flex items-center gap-4">
+                                <img src="${cover}" class="w-10 h-14 object-cover rounded shadow-md border border-gray-700">
+                                <p class="text-white font-bold truncate max-w-[200px]">${book.title}</p>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-sm text-gray-400">
+                            ${author}
+                        </td>
+                        <td class="px-5 py-4 text-sm">
+                            <span class="relative inline-block px-3 py-1 font-semibold leading-tight rounded-full bg-green-900/30 text-green-400 border border-green-900">
+                                <span class="relative text-[10px] uppercase tracking-wide">Comprado</span>
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-sm">
+                            <button onclick="deleteBook(${index})" class="text-red-400 hover:text-red-300 transition text-xs font-bold border border-red-900/50 bg-red-900/10 px-3 py-1.5 rounded hover:bg-red-900/30">
+                                <i class="fas fa-trash mr-1"></i> Borrar
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
         }
 
-        // --- 2. BORRAR LIBRO ---
-        async function deleteBook(id) {
-            if(!confirm('¿Seguro que quieres borrar este libro?')) return;
+        // --- 2. BORRAR LIBRO DE LA MEMORIA ---
+        window.deleteBook = function(index) {
+            if(!confirm('¿Seguro que quieres eliminar este libro de tu biblioteca?')) return;
 
-            try {
-                const response = await fetch(`${API_URL}/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-XSRF-TOKEN': getCsrfToken() // TOKEN DE SEGURIDAD
-                    }
-                });
+            // 1. Leemos
+            let myBooks = JSON.parse(localStorage.getItem('myBooks')) || [];
+            
+            // 2. Borramos el índice seleccionado
+            myBooks.splice(index, 1);
+            
+            // 3. Guardamos de nuevo
+            localStorage.setItem('myBooks', JSON.stringify(myBooks));
+            
+            // 4. Refrescamos la pantalla
+            loadBooks();
+        };
 
-                if (response.ok || response.status === 204) {
-                    alert('Libro eliminado correctamente');
-                    loadBooks(); // Recargamos la lista
-                } else {
-                    alert('Error al eliminar. Revisa si tienes permisos.');
-                }
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        // Ejecutar al cargar
-        loadBooks();
+        // Ejecutar al cargar la página
+        window.onload = loadBooks;
     </script>
 </body>
 </html>

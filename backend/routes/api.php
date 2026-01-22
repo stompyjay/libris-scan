@@ -65,4 +65,6 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/scan',  [BookSearchController::class, 'search']); 
     
     Route::get('/browse', [BookSearchController::class, 'browseByCategory']);
+
+    Route::post('/purchase', [PurchaseController::class, 'store']);
 });

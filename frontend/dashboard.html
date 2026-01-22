@@ -66,10 +66,6 @@
                         <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Miembro Premium</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 bg-[#1a1a1e] p-2 px-4 rounded-2xl border border-gray-800">
-                    <i class="fas fa-shopping-cart text-blue-500"></i>
-                    <span id="cart-count" class="font-bold">0</span>
-                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-800 shadow-2xl">
@@ -105,6 +101,28 @@
         </main>
     </div>
 
+    <div id="drop-zone" class="fixed right-4 top-24 bottom-4 w-72 bg-[#1a1a1e] border-2 border-dashed border-gray-700 rounded-2xl p-4 flex flex-col shadow-2xl z-40 transition-colors">
+    
+    <div class="text-center border-b border-gray-700 pb-3 mb-3">
+        <i class="fas fa-shopping-cart text-3xl text-blue-500 mb-2"></i>
+        <h3 class="font-bold text-white">Tu Carrito</h3>
+        <p id="empty-msg" class="text-xs text-gray-500 mt-1">Arrastra libros aquí</p>
+    </div>
+
+    <div id="cart-list" class="flex-1 overflow-y-auto space-y-2 hidden custom-scrollbar pb-2">
+        </div>
+
+    <div id="cart-actions" class="mt-auto hidden">
+        <div class="flex justify-between text-sm font-bold mb-3 px-1">
+            <span>Total:</span>
+            <span id="cart-total" class="text-blue-400">0.00€</span>
+        </div>
+        <button onclick="checkoutAll()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition">
+            Pagar Todo
+        </button>
+    </div>
+</div>
+
     <div id="product-modal" class="fixed inset-0 z-[60] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl relative text-gray-800">
             <button onclick="closeModal('product-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 z-10 text-2xl"><i class="fas fa-times"></i></button>
@@ -127,77 +145,208 @@
 
     <script>
     // --- CONFIGURACIÓN ---
-    // Si tu proyecto está en una carpeta (ej: localhost/mi-proyecto/public), ajusta esto:
     const API_BASE_URL = '/api'; 
 
+    // VARIABLES GLOBALES IMPORTANTES
+    let currentBooks = []; // <--- AQUÍ guardaremos los libros para que el arrastre no falle
+    let cart = [];         // El carrito de compras
     let myBooks = JSON.parse(localStorage.getItem('myBooks')) || [];
-    let cartCount = 0;
 
-    // --- 1. CARGAR PERFIL REAL (BACKEND) ---
+    // --- 1. CARGAR PERFIL Y LOGOUT (NO TOCADO) ---
     async function loadUserProfile() {
         try {
-            // Llamamos a la ruta '/api/user' que definiste en tu api.php
             const response = await fetch(`${API_BASE_URL}/user`, {
                 method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    // Esto es vital para que Laravel sepa que es una petición AJAX
-                    'X-Requested-With': 'XMLHttpRequest' 
-                }
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
-
-            if (response.status === 401) {
-                // Si Laravel dice "No autorizado" (401), mandamos al login
-                alert("Tu sesión ha expirado. Por favor ingresa nuevamente.");
-                window.location.href = 'index.html'; // O login.html
-                return;
-            }
-
+            if (response.status === 401) { window.location.href = 'index.html'; return; }
             if (response.ok) {
                 const userData = await response.json();
-                
-                // Actualizamos el DOM con los datos REALES de la base de datos
                 document.getElementById('header-name').innerText = userData.name;
                 document.getElementById('sidebar-name').innerText = userData.name;
-                
-                // Opcional: Si tienes el email, podrías mostrarlo también
-                // console.log("Usuario conectado:", userData);
             }
-
-        } catch (error) {
-            console.error("Error al conectar con el servidor:", error);
-        }
+        } catch (error) { console.error(error); }
     }
 
-    // --- 2. LOGOUT REAL (BACKEND) ---
     async function logout() {
-        if(!confirm("¿Estás seguro de que quieres cerrar sesión?")) return;
-
-        try {
-            // Intentamos cerrar sesión en el servidor
-            await fetch('/logout', { 
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    // Si usas tokens CSRF en meta tag, añádelo aquí.
-                    // Si usas Sanctum/API puro, esto suele bastar.
-                }
-            });
-        } catch (e) {
-            console.log("Cerrando sesión localmente...");
-        } finally {
-            // Redirigimos al usuario fuera pase lo que pase
-            window.location.href = 'index.html'; 
-        }
+        if(!confirm("¿Cerrar sesión?")) return;
+        try { await fetch('/logout', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); } 
+        catch (e) {} finally { window.location.href = 'index.html'; }
     }
 
-    // --- LÓGICA DE TIENDA (API DE LIBROS - ESTO SE MANTIENE IGUAL) ---
+    // --- 2. RENDERIZADO DE LIBROS (MODIFICADO PARA ARRASTRAR) ---
+    function renderBooks(books) {
+        // Guardamos los datos en memoria para que no se pierdan al arrastrar
+        currentBooks = books; 
+        
+        const grid = document.getElementById('api-results-grid');
+        
+        // Usamos el ÍNDICE (index) en lugar de pasar todo el objeto JSON
+        grid.innerHTML = books.map((book, index) => {
+            const cover = book.cover_i || book.cover_id ? `https://covers.openlibrary.org/b/id/${book.cover_i || book.cover_id}-M.jpg` : 'https://via.placeholder.com/150x220?text=No+Cover';
+            const author = book.author_name ? book.author_name[0] : (book.authors ? book.authors[0].name : 'Autor desconocido');
+
+            return `
+                <div 
+                    class="book-card cursor-pointer group animate-[fadeIn_0.3s] relative bg-[#1a1a1e]"
+                    onclick="openProductModal(${index})" 
+                    draggable="true"
+                    ondragstart="empezarArrastre(event, ${index})"
+                >
+                    <img src="${cover}" class="w-full h-56 object-cover group-hover:scale-105 transition pointer-events-none">
+                    <div class="p-4">
+                        <h4 class="font-bold text-xs truncate text-white">${book.title}</h4>
+                        <p class="text-[10px] text-gray-500 truncate">${author}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // --- 3. LÓGICA DE ARRASTRAR Y SOLTAR (ARREGLADA) ---
+    
+    // Función simple: solo envía el número de la posición del libro (0, 1, 2...)
+    function empezarArrastre(event, index) {
+        event.dataTransfer.setData('text/plain', index);
+        event.dataTransfer.effectAllowed = "copy";
+    }
+
+    const dropZone = document.getElementById('drop-zone');
+    
+    if(dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault(); 
+            dropZone.classList.add('border-blue-500', 'bg-blue-900/20');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-blue-500', 'bg-blue-900/20');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-900/20');
+
+            // 1. Recuperamos el número
+            const index = e.dataTransfer.getData('text/plain');
+            if(!index && index !== 0) return;
+
+            // 2. Buscamos el libro en la memoria usando ese número
+            const libroOriginal = currentBooks[index];
+            
+            if (libroOriginal) {
+                prepararYAgregar(libroOriginal);
+            }
+        });
+    }
+
+    // Función auxiliar para formatear los datos antes de meterlos al carro
+    function prepararYAgregar(rawBook) {
+        const cover = rawBook.cover_i || rawBook.cover_id ? 
+            `https://covers.openlibrary.org/b/id/${rawBook.cover_i || rawBook.cover_id}-M.jpg` : 
+            (rawBook.img || 'https://via.placeholder.com/150x220');
+            
+        const bookForCart = {
+            title: rawBook.title,
+            author: rawBook.author_name ? rawBook.author_name[0] : (rawBook.authors ? rawBook.authors[0].name : 'Autor Desc.'),
+            cover: cover
+        };
+
+        addToCart(bookForCart);
+    }
+
+    // --- 4. MODAL Y API ---
+    
+    // Ahora recibe el índice, no el objeto entero
+    function openProductModal(index) {
+        const book = currentBooks[index];
+        const cover = book.cover_i || book.cover_id ? 
+            `https://covers.openlibrary.org/b/id/${book.cover_i || book.cover_id}-M.jpg` : 
+            (book.img || 'https://via.placeholder.com/150x220');
+
+        document.getElementById('modal-img').src = cover;
+        document.getElementById('modal-title').innerText = book.title;
+        document.getElementById('modal-author').innerText = book.author_name ? book.author_name[0] : 'Autor desconocido';
+        
+        const btn = document.getElementById('buy-btn');
+        btn.innerText = "Añadir al Carrito";
+        
+        // Al hacer click, añade al carrito lateral
+        btn.onclick = () => {
+            prepararYAgregar(book);
+            closeModal('product-modal');
+        };
+        
+        document.getElementById('product-modal').classList.remove('hidden');
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    // --- 5. CARRITO LATERAL ---
+    function addToCart(book) {
+        if(cart.find(b => b.title === book.title)) {
+            // Opcional: alert("Ya está en el carrito");
+            return;
+        }
+        cart.push(book);
+        renderCart();
+    }
+
+    function renderCart() {
+        const cartList = document.getElementById('cart-list');
+        const emptyMsg = document.getElementById('empty-msg');
+        const cartActions = document.getElementById('cart-actions');
+        const cartTotal = document.getElementById('cart-total');
+
+        if (cart.length > 0) {
+            emptyMsg.style.display = 'none';
+            cartList.classList.remove('hidden');
+            cartActions.classList.remove('hidden');
+            dropZone.classList.remove('border-dashed');
+        } else {
+            emptyMsg.style.display = 'block';
+            cartList.classList.add('hidden');
+            cartActions.classList.add('hidden');
+            dropZone.classList.add('border-dashed');
+        }
+
+        cartList.innerHTML = cart.map((book, index) => `
+            <div class="flex items-center gap-2 bg-black/40 p-2 rounded border border-gray-700 animate-[fadeIn_0.3s]">
+                <img src="${book.cover}" class="w-8 h-12 object-cover rounded">
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] font-bold truncate text-white">${book.title}</p>
+                    <p class="text-[9px] text-gray-400">9.95€</p>
+                </div>
+                <button onclick="removeFromCart(${index})" class="text-red-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
+            </div>
+        `).join('');
+
+        document.getElementById('cart-total').innerText = (cart.length * 9.95).toFixed(2) + '€';
+    }
+
+    window.removeFromCart = function(index) {
+        cart.splice(index, 1);
+        renderCart();
+    };
+
+    window.checkoutAll = function() {
+        if(cart.length === 0) {
+            alert("El carrito está vacío");
+            return;
+        }
+
+        // 1. Guardamos el carrito actual en la memoria del navegador
+        localStorage.setItem('carritoParaPagar', JSON.stringify(cart));
+
+        // 2. Nos vamos a la página de pago
+        window.location.href = 'shop.html';
+    };
+
+    // --- 6. PETICIONES A LA API (SIN CAMBIOS) ---
     async function searchBooks() {
         const query = document.getElementById('api-search').value;
         if(!query) return;
         toggleLoader(true);
-        // Nota: Aquí sigues usando OpenLibrary. En el futuro cambiarás esto a `${API_BASE_URL}/books`
         const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=10`);
         const data = await res.json();
         renderBooks(data.docs);
@@ -213,61 +362,21 @@
         renderBooks(data.works);
         toggleLoader(false);
     }
-
-    function renderBooks(books) {
-        const grid = document.getElementById('api-results-grid');
-        grid.innerHTML = books.map(book => {
-            const cover = book.cover_i || book.cover_id ? `https://covers.openlibrary.org/b/id/${book.cover_i || book.cover_id}-M.jpg` : 'https://via.placeholder.com/150x220?text=No+Cover';
-            const author = book.author_name ? book.author_name[0] : (book.authors ? book.authors[0].name : 'Autor desconocido');
-            // Escapamos comillas para evitar errores en el HTML
-            const safeTitle = book.title.replace(/"/g, "&quot;");
-            const bookData = JSON.stringify({title: safeTitle, author, img: cover}).replace(/"/g, "&quot;");
-            
-            return `
-                <div onclick='openProductModal(${bookData})' class="book-card cursor-pointer group animate-[fadeIn_0.3s]">
-                    <img src="${cover}" class="w-full h-56 object-cover group-hover:scale-105 transition">
-                    <div class="p-4">
-                        <h4 class="font-bold text-xs truncate">${book.title}</h4>
-                        <p class="text-[10px] text-gray-500">${author}</p>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    function openProductModal(book) {
-        document.getElementById('modal-img').src = book.img;
-        document.getElementById('modal-title').innerText = book.title;
-        document.getElementById('modal-author').innerText = book.author;
-        
-        // Botón de comprar
-        document.getElementById('buy-btn').onclick = () => {
-            // AQUÍ ES DONDE EN EL FUTURO ENVIARÁS LA COMPRA A TU API LARAVEL
-            if(!myBooks.find(b => b.title === book.title)) {
-                myBooks.push(book);
-                localStorage.setItem('myBooks', JSON.stringify(myBooks));
-                cartCount++;
-                document.getElementById('cart-count').innerText = cartCount;
-                alert("¡Libro añadido a tu biblioteca personal!");
-            } else {
-                alert("Ya posees este libro.");
-            }
-            closeModal('product-modal');
-        };
-        document.getElementById('product-modal').classList.remove('hidden');
-    }
-
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     
     function toggleLoader(show) { 
         document.getElementById('loader').style.display = show ? 'block' : 'none'; 
         document.getElementById('btn-text').style.display = show ? 'none' : 'block';
     }
 
-    // --- INICIALIZACIÓN ---
     window.onload = () => {
-        loadUserProfile(); // <--- AHORA ESTO LLAMA A LARAVEL
-        searchByCategory(); 
+        loadUserProfile();
+        searchByCategory();
+        
+        // CÓDIGO EXTRA: Borra el carrito viejo de arriba si aún existe en el HTML
+        const oldCart = document.querySelector('#cart-count');
+        if(oldCart) {
+            oldCart.parentElement.style.display = 'none';
+        }
     };
 </script>
 </body>

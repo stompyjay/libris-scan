@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalizar Compra - BookStore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-[#0f0f12] text-white font-sans min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-4xl p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div class="bg-[#1a1a1e] p-6 rounded-2xl border border-gray-800 h-fit">
+            <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                <i class="fas fa-shopping-bag text-blue-500"></i> Resumen de tu pedido
+            </h2>
+
+            <div id="checkout-items" class="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                </div>
+
+            <div class="mt-6 pt-6 border-t border-gray-800">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-gray-400">Subtotal</span>
+                    <span id="subtotal-price" class="font-bold">0.00€</span>
+                </div>
+                <div class="flex justify-between items-center text-xl font-bold text-blue-400 mt-4">
+                    <span>Total a Pagar</span>
+                    <span id="total-price">0.00€</span>
+                </div>
+            </div>
+            
+            <a href="dashboard.html" class="block text-center mt-6 text-sm text-gray-500 hover:text-white transition">
+                <i class="fas fa-arrow-left"></i> Volver a la tienda
+            </a>
+        </div>
+
+        <div class="bg-[#1a1a1e] p-6 rounded-2xl border border-gray-800">
+            <h2 class="text-xl font-bold mb-6">Datos de Pago</h2>
+            
+            <form id="payment-form" onsubmit="confirmarCompra(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Nombre en la tarjeta</label>
+                    <input type="text" required placeholder="Ej: Juan Pérez" 
+                        class="w-full bg-black/30 border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Número de tarjeta</label>
+                    <div class="relative">
+                        <i class="fas fa-credit-card absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="text" required placeholder="0000 0000 0000 0000" maxlength="19"
+                            class="w-full bg-black/30 border border-gray-700 rounded-lg p-3 pl-10 text-sm focus:border-blue-500 outline-none transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Caducidad</label>
+                        <input type="text" required placeholder="MM/YY" maxlength="5"
+                            class="w-full bg-black/30 border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">CVV</label>
+                        <input type="password" required placeholder="123" maxlength="3"
+                            class="w-full bg-black/30 border border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition">
+                    </div>
+                </div>
+
+                <button type="submit" 
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl mt-6 transition shadow-lg shadow-blue-900/20 flex justify-center items-center gap-2">
+                    <span>Pagar Ahora</span>
+                    <i class="fas fa-lock text-xs opacity-70"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // RECUPERAR EL CARRITO DEL LOCALSTORAGE
+        let cart = JSON.parse(localStorage.getItem('carritoParaPagar')) || [];
+
+        // Si no hay nada, volver al dashboard
+        if (cart.length === 0) {
+            alert("No tienes productos en el carrito.");
+            window.location.href = 'dashboard.html';
+        }
+
+        // Renderizar los items
+        const container = document.getElementById('checkout-items');
+        let total = 0;
+
+        container.innerHTML = cart.map(item => {
+            const price = 9.95; // Precio fijo por ahora
+            total += price;
+            return `
+                <div class="flex gap-4 bg-black/20 p-3 rounded-lg border border-gray-800">
+                    <img src="${item.cover}" class="w-12 h-16 object-cover rounded shadow-sm">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-sm text-gray-200 line-clamp-1">${item.title}</h4>
+                        <p class="text-xs text-gray-500">${item.author}</p>
+                        <p class="text-sm font-bold text-blue-400 mt-1">${price}€</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Actualizar precios
+        document.getElementById('subtotal-price').innerText = total.toFixed(2) + '€';
+        document.getElementById('total-price').innerText = total.toFixed(2) + '€';
+
+        // LÓGICA DE COMPRA FINAL
+        // En shop.html
+
+        async function confirmarCompra(e) {
+            e.preventDefault(); 
+            
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                // 1. Recuperamos lo que traías del Dashboard
+                const carrito = JSON.parse(localStorage.getItem('carritoParaPagar')) || [];
+                
+                // 2. Recuperamos tu biblioteca actual
+                let misLibros = JSON.parse(localStorage.getItem('myBooks')) || [];
+
+                // 3. Mezclamos los libros nuevos con los viejos
+                carrito.forEach(nuevoLibro => {
+                    // Verificamos que no tengas ya ese libro (por título)
+                    const yaLoTengo = misLibros.find(b => b.title === nuevoLibro.title);
+                    
+                    if (!yaLoTengo) {
+                        // Nos aseguramos de guardar los datos importantes
+                        misLibros.push({
+                            title: nuevoLibro.title,
+                            author: nuevoLibro.author || 'Desconocido',
+                            cover: nuevoLibro.cover || 'https://via.placeholder.com/150',
+                            status: 'pending' // Estado por defecto
+                        });
+                    }
+                });
+
+                // 4. GUARDAMOS LA LISTA DEFINITIVA
+                localStorage.setItem('myBooks', JSON.stringify(misLibros));
+
+                // 5. Borramos el carrito temporal
+                localStorage.removeItem('carritoParaPagar');
+
+                alert("¡Compra guardada con éxito!");
+                
+                // IMPORTANTE: Asegúrate de que este nombre de archivo es correcto
+                // Si tu archivo se llama 'books.html' o 'mis_libros.html', pon ese nombre aquí.
+                window.location.href = 'books.html'; 
+
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
