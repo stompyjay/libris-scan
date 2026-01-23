@@ -20,6 +20,12 @@
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Scrollbar personalizado para el carrito */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1e; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
 <body class="min-h-screen pb-20 md:pb-0 flex flex-col">
@@ -79,14 +85,48 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-800 shadow-2xl">
                     <div class="md:col-span-1">
                         <label for="category-select" class="sr-only">Seleccionar Categoría</label>
-                        <select id="category-select" onchange="searchByCategory()" class="w-full category-select text-sm font-bold h-full">
-                            <option value="">Categorías</option>
-                            <option value="horror">Terror 👻</option>
-                            <option value="science_fiction">Ciencia Ficción 🚀</option>
-                            <option value="fantasy" selected>Fantasía 🧙‍♂️</option>
-                            <option value="mystery">Misterio 🔍</option>
-                            <option value="romance">Romance ❤️</option>
-                        </select>
+                        <div class="md:col-span-1 h-full">
+    <label for="category-select" class="sr-only">Seleccionar Categoría</label>
+    <select id="category-select" onchange="searchByCategory()" 
+            class="w-full category-select text-sm font-bold h-full bg-[#1a1a1e] text-white border border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 custom-scrollbar">
+        
+        <option value="">📚 Explorar todo</option>
+
+        <optgroup label="Géneros Literarios">
+            <option value="novel">Novela</option>
+            <option value="short_story">Cuento / Relato</option>
+            <option value="poetry">Poesía</option>
+            <option value="plays">Teatro / Dramaturgia</option>
+            <option value="essay">Ensayo</option>
+            <option value="fables">Fábulas</option>
+            <option value="legends">Mitos y Leyendas</option>
+            <option value="biography">Biografías y Memorias</option>
+            <option value="chronicle">Crónica</option>
+        </optgroup>
+
+        <optgroup label="Temáticas y Colecciones">
+            <option value="children">Infantil y Juvenil 🧸</option>
+            <option value="fantasy">Fantasía y Magia 🧙‍♂️</option>
+            <option value="science_fiction">Ciencia Ficción 🚀</option>
+            <option value="mystery_and_detective_stories">Misterio y Policial 🔍</option>
+            <option value="horror">Terror y Sobrenatural 👻</option>
+            <option value="romance">Romance y Sentimientos ❤️</option>
+            <option value="historical">Novela Histórica 🏛️</option>
+            <option value="philosophy">Filosofía y Pensamiento 🧠</option>
+            <option value="adventure">Aventuras y Viajes 🌍</option>
+            <option value="humor">Humor y Sátira 😄</option>
+            <option value="psychology">Psicológico</option>
+        </optgroup>
+
+        <optgroup label="Formatos Especiales">
+            <option value="audiobooks">Audiolibros 🎧</option>
+            <option value="textbooks">Manuales y Didáctica</option>
+            <option value="art">Arte y Arquitectura</option>
+            <option value="recipes">Gastronomía y Cocina</option>
+        </optgroup>
+
+    </select>
+</div>
                     </div>
                     <div class="md:col-span-3 flex gap-2">
                         <div class="relative flex-1">
@@ -139,7 +179,7 @@
             </button>
             <div class="flex flex-col md:flex-row">
                 <div class="md:w-1/2 bg-gray-100 p-8 flex items-center justify-center">
-                    <img id="modal-img" src="" alt="" class="shadow-2xl rounded-lg max-h-72 object-cover">
+                    <img id="modal-img" src="" alt="" class="shadow-2xl rounded-lg max-h-72 object-cover" onerror="this.src='https://via.placeholder.com/150x220?text=No+Cover'">
                 </div>
                 <div class="md:w-1/2 p-10">
                     <span class="text-blue-600 font-black text-[10px] uppercase mb-2 block">Versión Digital</span>
@@ -189,15 +229,47 @@
         catch (e) {} finally { window.location.href = 'index.html'; }
     }
 
-    // 2. RENDERIZADO (CON ACCESIBILIDAD MEJORADA)
+    // --- FUNCIÓN AUXILIAR PARA OBTENER LA MEJOR IMAGEN ---
+    function getBestCover(book) {
+        // Prioridad 1: ID directo de API (Search = cover_i, Subject = cover_id)
+        if (book.cover_id) return `https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`;
+        if (book.cover_i) return `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`;
+        
+        // Prioridad 2: URL completa desde Base de Datos
+        if (book.cover_url && book.cover_url.startsWith('http')) return book.cover_url;
+
+        // Prioridad 3: ISBN
+        if (book.isbn) {
+            const isbnVal = Array.isArray(book.isbn) ? book.isbn[0] : book.isbn;
+            return `https://covers.openlibrary.org/b/isbn/${isbnVal}-M.jpg`;
+        }
+
+        // Fallback
+        return 'https://via.placeholder.com/150x220?text=No+Cover';
+    }
+
+    // --- FUNCIÓN AUXILIAR PARA OBTENER EL MEJOR AUTOR ---
+    function getBestAuthor(book) {
+        if (book.author) return book.author; // DB
+        if (Array.isArray(book.author_name)) return book.author_name[0]; // Search API
+        if (Array.isArray(book.authors)) return book.authors[0].name; // Subject API
+        return 'Autor desconocido';
+    }
+
+    // 2. RENDERIZADO MEJORADO (SOLUCIÓN A LAS FOTOS ROTAS)
     function renderBooks(books) {
         currentBooks = books; 
         const grid = document.getElementById('api-results-grid');
         
+        if (!books || books.length === 0) {
+            grid.innerHTML = '<p class="text-gray-500 col-span-full text-center py-10">No se encontraron libros.</p>';
+            return;
+        }
+
         grid.innerHTML = books.map((book, index) => {
-            const cover = book.cover_i || book.cover_id ? `https://covers.openlibrary.org/b/id/${book.cover_i || book.cover_id}-M.jpg` : 'https://via.placeholder.com/150x220?text=No+Cover';
-            const author = book.author_name ? book.author_name[0] : (book.authors ? book.authors[0].name : 'Autor desconocido');
-            const titleSafe = book.title.replace(/"/g, '&quot;'); 
+            const cover = getBestCover(book);
+            const author = getBestAuthor(book);
+            const titleSafe = (book.title || "Sin Título").replace(/"/g, '&quot;'); 
 
             return `
                 <button 
@@ -207,10 +279,16 @@
                     ondragstart="empezarArrastre(event, ${index})"
                     aria-label="Ver detalles de ${titleSafe}"
                 >
-                    <img src="${cover}" alt="Portada de ${titleSafe}" class="w-full h-56 object-cover group-hover:scale-105 transition pointer-events-none">
+                    <div class="overflow-hidden h-56 relative bg-gray-800">
+                        <img src="${cover}" 
+                             alt="Portada de ${titleSafe}" 
+                             loading="lazy"
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/150x220?text=No+Disponible';"
+                             class="w-full h-full object-cover group-hover:scale-110 transition duration-500 pointer-events-none">
+                    </div>
                     <div class="p-4">
-                        <h4 class="font-bold text-xs truncate text-white">${book.title}</h4>
-                        <p class="text-[10px] text-gray-300 truncate">${author}</p>
+                        <h4 class="font-bold text-xs truncate text-white text-left">${book.title}</h4>
+                        <p class="text-[10px] text-gray-400 truncate text-left">${author}</p>
                     </div>
                 </button>
             `;
@@ -244,13 +322,13 @@
     }
 
     function prepararYAgregar(rawBook) {
-        const cover = rawBook.cover_i || rawBook.cover_id ? 
-            `https://covers.openlibrary.org/b/id/${rawBook.cover_i || rawBook.cover_id}-M.jpg` : 
-            (rawBook.img || 'https://via.placeholder.com/150x220');
+        // Usamos las mismas funciones auxiliares para asegurar consistencia
+        const cover = getBestCover(rawBook);
+        const author = getBestAuthor(rawBook);
             
         const bookForCart = {
             title: rawBook.title,
-            author: rawBook.author_name ? rawBook.author_name[0] : (rawBook.authors ? rawBook.authors[0].name : 'Autor Desc.'),
+            author: author,
             cover: cover
         };
         addToCart(bookForCart);
@@ -259,16 +337,15 @@
     // 4. MODAL Y API
     function openProductModal(index) {
         const book = currentBooks[index];
-        const cover = book.cover_i || book.cover_id ? 
-            `https://covers.openlibrary.org/b/id/${book.cover_i || book.cover_id}-M.jpg` : 
-            (book.img || 'https://via.placeholder.com/150x220');
+        const cover = getBestCover(book);
+        const author = getBestAuthor(book);
 
         const imgEl = document.getElementById('modal-img');
         imgEl.src = cover;
         imgEl.alt = "Portada de " + book.title;
 
         document.getElementById('modal-title').innerText = book.title;
-        document.getElementById('modal-author').innerText = book.author_name ? book.author_name[0] : 'Autor desconocido';
+        document.getElementById('modal-author').innerText = author;
         
         const btn = document.getElementById('buy-btn');
         btn.innerText = "Añadir al Carrito";
@@ -293,6 +370,7 @@
 
     // 5. CARRITO
     function addToCart(book) {
+        // Evitar duplicados por título
         if(cart.find(b => b.title === book.title)) return;
         cart.push(book);
         renderCart();
@@ -317,7 +395,9 @@
 
         cartList.innerHTML = cart.map((book, index) => `
             <div class="flex items-center gap-2 bg-black/40 p-2 rounded border border-gray-700 animate-[fadeIn_0.3s]">
-                <img src="${book.cover}" alt="" class="w-8 h-12 object-cover rounded">
+                <img src="${book.cover}" alt="" 
+                     class="w-8 h-12 object-cover rounded"
+                     onerror="this.src='https://via.placeholder.com/150x220?text=Err'">
                 <div class="flex-1 min-w-0">
                     <p class="text-[10px] font-bold truncate text-white">${book.title}</p>
                     <p class="text-[9px] text-gray-400">9.95€</p>
@@ -334,9 +414,12 @@
         renderCart();
     };
 
+    // --- FUNCIÓN DE CHECKOUT INTACTA ---
     window.checkoutAll = function() {
         if(cart.length === 0) { alert("El carrito está vacío"); return; }
+        // Guardamos el carrito para recuperarlo en shop.html
         localStorage.setItem('carritoParaPagar', JSON.stringify(cart));
+        // REDIRECCIÓN OBLIGATORIA
         window.location.href = 'shop.html';
     };
 
@@ -345,20 +428,31 @@
         const query = document.getElementById('api-search').value;
         if(!query) return;
         toggleLoader(true);
-        const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=10`);
-        const data = await res.json();
-        renderBooks(data.docs);
-        toggleLoader(false);
+        try {
+            const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=12`);
+            const data = await res.json();
+            renderBooks(data.docs);
+        } catch (e) {
+            console.error(e);
+            alert("Error al buscar libros");
+        } finally {
+            toggleLoader(false);
+        }
     }
 
     async function searchByCategory() {
         const cat = document.getElementById('category-select').value;
         if(!cat) return;
         toggleLoader(true);
-        const res = await fetch(`https://openlibrary.org/subjects/${cat}.json?limit=10`);
-        const data = await res.json();
-        renderBooks(data.works);
-        toggleLoader(false);
+        try {
+            const res = await fetch(`https://openlibrary.org/subjects/${cat}.json?limit=12`);
+            const data = await res.json();
+            renderBooks(data.works);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            toggleLoader(false);
+        }
     }
     
     function toggleLoader(show) { 
