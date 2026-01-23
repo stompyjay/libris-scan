@@ -17,6 +17,12 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            
+            // --- AÑADIMOS ESTO (Backend listo) ---
+            'surname' => ['nullable', 'string', 'max:255'], // nullable: permite dejarlo vacío
+            'phone' => ['nullable', 'string', 'max:20'],     // max:20: longitud razonable para teléfonos
+            // -------------------------------------
+
             'email' => [
                 'required',
                 'string',

@@ -3,7 +3,6 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>Registro - Libris-Scan</title>
@@ -34,7 +33,11 @@
             
             @if ($errors->any())
                 <div class="mb-4 text-sm text-red-400 bg-red-900/30 p-2 rounded text-center">
-                    Revisa los datos ingresados.
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
@@ -43,7 +46,19 @@
 
                 <div>
                     <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus
-                        placeholder="Nombre Completo"
+                        placeholder="Nombre"
+                        class="w-full bg-white text-gray-900 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500" />
+                </div>
+
+                <div>
+                    <input id="surname" type="text" name="surname" value="{{ old('surname') }}" required
+                        placeholder="Apellido"
+                        class="w-full bg-white text-gray-900 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500" />
+                </div>
+
+                <div>
+                    <input id="phone" type="text" name="phone" value="{{ old('phone') }}" required
+                        placeholder="Teléfono"
                         class="w-full bg-white text-gray-900 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500" />
                 </div>
 
@@ -76,7 +91,7 @@
                 </div>
             </form>
         </div>
-
+        
         <div class="w-full flex gap-4 mt-6 opacity-70 hover:opacity-100 transition">
             <button class="flex-1 border border-gray-600 text-white font-medium rounded-xl py-2 flex items-center justify-center gap-2 hover:bg-gray-800 transition text-sm">
                 Apple

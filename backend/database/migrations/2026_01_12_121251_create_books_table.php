@@ -24,7 +24,7 @@ return new class extends Migration
             
             // --- AQUÍ BORRAMOS 'author' ---
             // Los autores irán en la tabla 'authors' y se unirán con la tabla 'author_book'.
-            
+            $table->string('author')->default('Desconocido');
             $table->string('isbn')->nullable(); // Recomendado añadir ISBN
             $table->string('cover_id')->nullable(); // ID de OpenLibrary
             $table->text('description')->nullable(); 

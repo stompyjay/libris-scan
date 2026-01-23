@@ -6,121 +6,239 @@
     <title>Mis Libros - Biblioteca</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/dark-hive/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+    <style>
+        /* Ajustes para jQuery UI + Tailwind + Accesibilidad */
+        .ui-widget-content { background: #1a1a1e !important; border: 1px solid #374151 !important; color: #e5e7eb !important; }
+        .ui-widget-header { background: #111827 !important; border: none !important; border-bottom: 1px solid #374151 !important; }
+        .ui-tabs .ui-tabs-nav li { background: #374151; border: 1px solid #4b5563; border-radius: 4px 4px 0 0; }
+        .ui-tabs .ui-tabs-nav li.ui-tabs-active { background: #2563eb !important; border-color: #2563eb; } 
+        .ui-tabs .ui-tabs-nav li a { color: white !important; font-weight: bold; }
+        
+        /* Foco visible para navegación por teclado */
+        *:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+        .ui-tabs-anchor:focus-visible { outline: 2px solid #fbbf24 !important; } /* Foco amarillo en pestañas */
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a1a1e; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    </style>
 </head>
+
 <body class="bg-[#0f0f12] text-gray-300 font-sans min-h-screen">
 
-    <nav class="bg-[#1a1a1e] border-b border-gray-800 p-4 mb-8 sticky top-0 z-50">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white p-4 rounded-lg z-50">
+        Saltar al contenido principal
+    </a>
+
+    <div class="bg-gradient-to-r from-blue-900 to-purple-900 text-white text-center py-2 text-sm font-bold shadow-lg">
+        <p><i class="fas fa-bullhorn" aria-hidden="true"></i> ¡Novedad! Ahora puedes organizar tus lecturas por pestañas.</p>
+    </div>
+
+    <nav class="bg-[#1a1a1e] border-b border-gray-800 p-4 mb-8 sticky top-0 z-40">
         <div class="container mx-auto flex justify-between items-center">
-            <a href="dashboard.html" class="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm">
-                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            <a href="dashboard.html" class="text-gray-300 hover:text-white transition flex items-center gap-2 text-sm font-medium">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al Dashboard (Esc)
             </a>
-            <h1 class="text-lg font-bold text-white"><i class="fas fa-book text-blue-500 mr-2"></i>Mis Libros</h1>
-            <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition">
-                + Comprar Más
+            <h1 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-book text-blue-500" aria-hidden="true"></i> Mis Libros
+            </h1>
+            <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-md focus:ring-2 focus:ring-blue-400">
+                <i class="fas fa-plus" aria-hidden="true"></i> Comprar Más
             </a>
         </div>
     </nav>
 
-    <div class="container mx-auto px-4">
+    <main id="main-content" class="container mx-auto px-4 flex flex-col lg:flex-row gap-6">
         
-        <div class="bg-[#1a1a1e] rounded-2xl shadow-xl overflow-hidden border border-gray-800">
-            <table class="min-w-full leading-normal">
-                <thead>
-                    <tr>
-                        <th class="px-5 py-4 border-b border-gray-800 bg-black/40 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            Libro
-                        </th>
-                        <th class="px-5 py-4 border-b border-gray-800 bg-black/40 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            Autor
-                        </th>
-                        <th class="px-5 py-4 border-b border-gray-800 bg-black/40 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            Estado
-                        </th>
-                        <th class="px-5 py-4 border-b border-gray-800 bg-black/40 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            Acciones
-                        </th>
-                    </tr>
-                </thead>
-                <tbody id="books-table-body">
-                    </tbody>
-            </table>
+        <div class="w-full lg:w-3/4">
+            
+            <div id="tabs">
+                <ul>
+                    <li><a href="#tabs-1"><i class="fas fa-list mr-2" aria-hidden="true"></i>Todos mis Libros</a></li>
+                    <li><a href="#tabs-2"><i class="fas fa-check-circle mr-2" aria-hidden="true"></i>Leídos</a></li>
+                </ul>
+                
+                <div id="tabs-1">
+                    <div class="overflow-hidden rounded-lg border border-gray-700">
+                        <table class="min-w-full leading-normal text-left">
+                            <thead class="bg-[#111827]">
+                                <tr>
+                                    <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Libro</th>
+                                    <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Autor</th>
+                                    <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="books-table-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="tabs-2">
+                    <div class="overflow-hidden rounded-lg border border-gray-700">
+                        <table class="min-w-full leading-normal text-left">
+                            <thead class="bg-[#111827]">
+                                <tr>
+                                    <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Libro</th>
+                                    <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Autor</th>
+                                    <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="completed-books-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+
+        <aside class="w-full lg:w-1/4">
+            <div class="bg-[#1a1a1e] p-6 rounded-xl border border-gray-800 sticky top-24 shadow-xl">
+                <h2 class="text-white font-bold text-lg mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
+                    <i class="fas fa-user-circle text-blue-500" aria-hidden="true"></i> Mi Perfil
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300 text-sm font-medium">Total Libros:</span>
+                        <span id="total-count" class="font-mono text-white font-bold bg-blue-900 px-3 py-1 rounded">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300 text-sm font-medium">Nivel:</span>
+                        <span class="text-yellow-400 text-sm font-bold flex items-center gap-1">
+                            <i class="fas fa-star" aria-hidden="true"></i> Lector Novato
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mt-6 bg-blue-900/20 p-3 rounded border border-blue-900/50">
+                    <p class="text-xs text-blue-200 leading-relaxed">
+                        <i class="fas fa-info-circle mr-1" aria-hidden="true"></i> Completa más lecturas para subir de nivel.
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+    </main>
 
     <script>
-        const tableBody = document.getElementById('books-table-body');
+        // --- 1. INICIALIZACIÓN ---
+        $( function() {
+            $( "#tabs" ).tabs();
+        });
 
-        // --- 1. CARGAR LIBROS DESDE MEMORIA (LocalStorage) ---
-        function loadBooks() {
-            // Recuperamos la lista guardada en shop.html
-            const myBooks = JSON.parse(localStorage.getItem('myBooks')) || [];
+        // Cargar libros al iniciar
+        document.addEventListener('DOMContentLoaded', loadBooks);
+
+        // --- 2. NAVEGACIÓN POR TECLADO ---
+        document.addEventListener('keydown', (e) => {
+            // Tecla ESCAPE: Volver al dashboard
+            if (e.key === "Escape") {
+                window.location.href = 'dashboard.html';
+            }
+        });
+
+        // --- 3. LÓGICA DE DATOS ---
+        async function loadBooks() {
+            const tableBody = document.getElementById('books-table-body');
+            const completedBody = document.getElementById('completed-books-body');
+            const totalCountSpan = document.getElementById('total-count');
             
-            tableBody.innerHTML = '';
+            // Estado de carga (Loading)
+            const loadingRow = '<tr><td colspan="3" class="p-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando tu biblioteca...</td></tr>';
+            tableBody.innerHTML = loadingRow;
+            completedBody.innerHTML = loadingRow;
 
-            if (myBooks.length === 0) {
-                tableBody.innerHTML = `
+            try {
+                // Simulación de token (Asegúrate de tener el sistema de login funcionando)
+                const token = localStorage.getItem('token');
+                
+                // NOTA: Si el backend falla, saltará al catch
+                const response = await fetch('/api/my-books', {
+                    headers: { 
+                        'Authorization': 'Bearer ' + token,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error(`Error ${response.status}: No se pudieron cargar los libros.`);
+
+                const myBooks = await response.json();
+                
+                // Actualizar contador
+                totalCountSpan.innerText = myBooks.length;
+
+                // Limpiar tablas
+                tableBody.innerHTML = '';
+                completedBody.innerHTML = '';
+
+                if (myBooks.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8 text-gray-500">No tienes libros aún. <a href="dashboard.html" class="text-blue-400 hover:underline">Ve a comprar uno.</a></td></tr>';
+                    completedBody.innerHTML = '<tr><td colspan="3" class="text-center p-8 text-gray-500">Sin libros leídos.</td></tr>';
+                    return;
+                }
+
+                // Renderizar Libros
+                myBooks.forEach(book => {
+                    const title = book.title || 'Sin título';
+                    const author = book.author || 'Desconocido';
+                    // Manejo seguro de imagen
+                    const cover = book.cover_id || book.cover || 'https://via.placeholder.com/50?text=No+Cover';
+                    
+                    let statusHtml = `<span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-700 text-gray-300">${book.status}</span>`;
+                    
+                    if (book.status === 'pending') {
+                        statusHtml = `<span class="text-yellow-400 bg-yellow-900/40 border border-yellow-700/50 px-2 py-1 rounded text-xs font-bold flex items-center w-fit gap-1"><i class="far fa-clock"></i> Pendiente</span>`;
+                    } else if (book.status === 'completed') {
+                        statusHtml = `<span class="text-green-400 bg-green-900/40 border border-green-700/50 px-2 py-1 rounded text-xs font-bold flex items-center w-fit gap-1"><i class="fas fa-check"></i> Leído</span>`;
+                    }
+
+                    // CORRECCIÓN ACCESIBILIDAD: alt="${title}" añadido
+                    const row = `
+                        <tr class="border-b border-gray-800 hover:bg-[#202025] transition duration-200">
+                            <td class="p-4 flex items-center gap-4">
+                                <img src="${cover}" alt="Portada de ${title}" class="w-12 h-16 object-cover rounded shadow-md border border-gray-700"> 
+                                <span class="text-gray-200 text-sm font-bold">${title}</span>
+                            </td>
+                            <td class="p-4 text-gray-400 text-sm font-medium">${author}</td>
+                            <td class="p-4">${statusHtml}</td>
+                        </tr>
+                    `;
+
+                    // Llenar "Todos"
+                    tableBody.innerHTML += row;
+
+                    // Llenar "Leídos"
+                    if (book.status === 'completed') {
+                        completedBody.innerHTML += row;
+                    }
+                });
+
+                // Si no hay leídos, mensaje específico
+                if (completedBody.innerHTML === '') {
+                    completedBody.innerHTML = '<tr><td colspan="3" class="text-center p-8 text-gray-500 italic">Aún no has terminado ningún libro. ¡Ánimo!</td></tr>';
+                }
+
+            } catch (error) {
+                console.error("Error cargando libros:", error);
+                const errorMsg = `
                     <tr>
-                        <td colspan="4" class="text-center p-8 text-gray-500">
-                            <i class="fas fa-box-open text-4xl mb-3 block opacity-50"></i>
-                            No tienes libros aún. ¡Ve al Dashboard a comprar algunos!
+                        <td colspan="3" class="text-center p-6 bg-red-900/10 border border-red-900/50 rounded-lg m-4">
+                            <div class="text-red-400 font-bold mb-1"><i class="fas fa-exclamation-triangle"></i> Error de conexión</div>
+                            <p class="text-red-300 text-sm">No pudimos cargar tus libros. Intenta recargar la página.</p>
                         </td>
                     </tr>`;
-                return;
+                tableBody.innerHTML = errorMsg;
+                completedBody.innerHTML = errorMsg;
             }
-
-            // Recorremos los libros y creamos las filas
-            myBooks.forEach((book, index) => {
-                // Definimos valores por defecto si faltan
-                const author = book.author || 'Desconocido';
-                const cover = book.cover || 'https://via.placeholder.com/50x75';
-                
-                // HTML de la fila
-                const row = `
-                    <tr class="hover:bg-white/5 transition border-b border-gray-800/50">
-                        <td class="px-5 py-4 text-sm">
-                            <div class="flex items-center gap-4">
-                                <img src="${cover}" class="w-10 h-14 object-cover rounded shadow-md border border-gray-700">
-                                <p class="text-white font-bold truncate max-w-[200px]">${book.title}</p>
-                            </div>
-                        </td>
-                        <td class="px-5 py-4 text-sm text-gray-400">
-                            ${author}
-                        </td>
-                        <td class="px-5 py-4 text-sm">
-                            <span class="relative inline-block px-3 py-1 font-semibold leading-tight rounded-full bg-green-900/30 text-green-400 border border-green-900">
-                                <span class="relative text-[10px] uppercase tracking-wide">Comprado</span>
-                            </span>
-                        </td>
-                        <td class="px-5 py-4 text-sm">
-                            <button onclick="deleteBook(${index})" class="text-red-400 hover:text-red-300 transition text-xs font-bold border border-red-900/50 bg-red-900/10 px-3 py-1.5 rounded hover:bg-red-900/30">
-                                <i class="fas fa-trash mr-1"></i> Borrar
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
         }
-
-        // --- 2. BORRAR LIBRO DE LA MEMORIA ---
-        window.deleteBook = function(index) {
-            if(!confirm('¿Seguro que quieres eliminar este libro de tu biblioteca?')) return;
-
-            // 1. Leemos
-            let myBooks = JSON.parse(localStorage.getItem('myBooks')) || [];
-            
-            // 2. Borramos el índice seleccionado
-            myBooks.splice(index, 1);
-            
-            // 3. Guardamos de nuevo
-            localStorage.setItem('myBooks', JSON.stringify(myBooks));
-            
-            // 4. Refrescamos la pantalla
-            loadBooks();
-        };
-
-        // Ejecutar al cargar la página
-        window.onload = loadBooks;
     </script>
 </body>
 </html>

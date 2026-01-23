@@ -11,8 +11,8 @@
 
     <div class="max-w-4xl mx-auto p-6">
         <div class="flex items-center justify-between mb-10">
-            <a href="dashboard.html" class="flex items-center gap-2 text-gray-400 hover:text-white transition">
-                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            <a href="dashboard.html" class="flex items-center gap-2 text-gray-300 hover:text-white transition">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al Dashboard
             </a>
             <h1 class="text-xl font-bold text-blue-500">Configuración de Cuenta</h1>
         </div>
@@ -22,14 +22,14 @@
             <div class="bg-[#1a1a1e] p-8 rounded-[2.5rem] border border-gray-800 text-center h-fit">
                 <div class="relative inline-block mb-4">
                     <div class="w-32 h-32 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-4xl shadow-2xl">
-                        👤
+                        <span role="img" aria-label="Icono de usuario">👤</span>
                     </div>
                 </div>
-                <h2 id="display-name" class="text-2xl font-black mb-1">Cargando...</h2>
-                <p class="text-gray-500 text-sm mb-6">Usuario Registrado</p>
+                <h2 id="display-name" class="text-2xl font-black mb-1">Cargando perfil...</h2>
+                <p class="text-gray-300 text-sm mb-6">Usuario Registrado</p>
                 
                 <div class="bg-blue-600/10 border border-blue-600/20 rounded-2xl p-4">
-                    <p class="text-blue-500 font-bold text-xs uppercase tracking-widest mb-1">Estado</p>
+                    <p class="text-blue-400 font-bold text-xs uppercase tracking-widest mb-1">Estado</p>
                     <p class="font-bold">Activo</p>
                 </div>
             </div>
@@ -39,22 +39,22 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-2">Nombre</label>
+                            <label for="input-name" class="block text-xs font-bold text-gray-300 uppercase ml-1 mb-2">Nombre</label>
                             <input type="text" id="input-name" class="w-full bg-[#121214] border border-gray-700 rounded-2xl p-4 focus:border-blue-500 outline-none transition text-white" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-2">Email (No editable)</label>
+                            <label for="input-email" class="block text-xs font-bold text-gray-300 uppercase ml-1 mb-2">Email (No editable)</label>
                             <input type="email" id="input-email" class="w-full bg-[#0a0a0c] border border-gray-800 text-gray-400 rounded-2xl p-4 outline-none cursor-not-allowed" readonly>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-2">Apellido</label>
+                            <label for="input-surname" class="block text-xs font-bold text-gray-300 uppercase ml-1 mb-2">Apellido</label>
                             <input type="text" id="input-surname" class="w-full bg-[#121214] border border-gray-700 rounded-2xl p-4 focus:border-blue-500 outline-none transition text-white" placeholder="Ej: Pérez">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase ml-1 mb-2">Teléfono</label>
+                            <label for="input-phone" class="block text-xs font-bold text-gray-300 uppercase ml-1 mb-2">Teléfono</label>
                             <input type="text" id="input-phone" class="w-full bg-[#121214] border border-gray-700 rounded-2xl p-4 focus:border-blue-500 outline-none transition text-white" placeholder="Ej: +34 600...">
                         </div>
                     </div>
@@ -69,13 +69,13 @@
         </div>
 
         <div class="mt-8 bg-red-500/5 border border-red-500/10 p-8 rounded-[2.5rem]">
-            <h3 class="text-red-500 font-bold mb-4">Zona de Peligro</h3>
+            <h3 class="text-red-400 font-bold mb-4">Zona de Peligro</h3>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="font-bold text-sm">Cerrar sesión</p>
-                    <p class="text-gray-500 text-xs">Tendrás que volver a entrar con tu contraseña.</p>
+                    <p class="font-bold text-sm text-gray-200">Cerrar sesión</p>
+                    <p class="text-gray-400 text-xs">Tendrás que volver a entrar con tu contraseña.</p>
                 </div>
-                <button onclick="logout()" class="text-red-500 font-bold text-sm hover:underline cursor-pointer">Salir ahora</button>
+                <button onclick="logout()" class="text-red-400 font-bold text-sm hover:underline cursor-pointer">Salir ahora</button>
             </div>
         </div>
     </div>
@@ -108,17 +108,15 @@
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("Datos recibidos:", data); // Para depurar
+                console.log("Datos recibidos:", data);
 
-                // Rellenar formulario
                 document.getElementById('input-name').value = data.name || ''; 
+                // Actualizamos el h2 con el nombre real
                 document.getElementById('display-name').innerText = data.name || 'Usuario';
                 
-                // IMPORTANTE: Si data.email viene null, es culpa del Modelo User.php
                 document.getElementById('input-email').value = data.email || ''; 
-                
-                document.getElementById('input-surname').value = data.apellido || ''; 
-                document.getElementById('input-phone').value = data.telefono || '';
+                document.getElementById('input-surname').value = data.surname || ''; 
+                document.getElementById('input-phone').value = data.phone || '';
             }
         } catch (error) {
             console.error('Error de red:', error);
@@ -134,15 +132,12 @@
         btn.innerText = "Guardando...";
         btn.disabled = true;
 
-        // Construimos el objeto a enviar
         const datos = {
             name: document.getElementById('input-name').value,
-            apellido: document.getElementById('input-surname').value,
-            telefono: document.getElementById('input-phone').value
+            surname: document.getElementById('input-surname').value,
+            phone: document.getElementById('input-phone').value
         };
-
-        // Solo añadimos el email al envío si TIENE ALGO ESCRITO.
-        // Si está vacío (porque no cargó), mejor no enviarlo para evitar errores de validación.
+        
         const emailVal = document.getElementById('input-email').value;
         if(emailVal && emailVal.trim() !== "") {
             datos.email = emailVal;
@@ -171,7 +166,6 @@
                 console.error("Error del servidor:", resultado);
                 let errorMsg = resultado.message || "Error desconocido";
                 if (resultado.errors) {
-                    // Convertir objeto de errores a texto legible
                     errorMsg = Object.values(resultado.errors).flat().join('\n');
                 }
                 alert('No se pudo guardar:\n' + errorMsg);

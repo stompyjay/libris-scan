@@ -9,6 +9,7 @@ use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BookSearchController;
 use App\Http\Controllers\ReviewController; // <--- Faltaba este
+use App\Http\Controllers\PurchaseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -66,5 +67,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     
     Route::get('/browse', [BookSearchController::class, 'browseByCategory']);
 
+    Route::middleware('auth:sanctum')->group(function () {
     Route::post('/purchase', [PurchaseController::class, 'store']);
+    Route::get('/my-books', [App\Http\Controllers\PurchaseController::class, 'index']);
+});
 });
