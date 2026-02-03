@@ -2,24 +2,20 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+// No hace falta importar Review aquí, solo la clase del Seeder
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // 1. Primero creas usuarios o libros si hacen falta
+        // ...
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // 2. AQUI LLAMAS A TU REVIEW SEEDER
+        $this->call([
+            ReviewSeeder::class,
+            // Si tuvieras BookSeeder::class, lo pondrías aquí también
         ]);
     }
 }

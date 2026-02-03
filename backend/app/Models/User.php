@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-
+use App\Models\Book;
+use App\Models\Profile;
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -43,4 +44,18 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+
+    public function books(){
+    return $this->belongsToMany(Book::class, 'book_user')
+                ->withPivot('status')
+                ->withTimestamps();
+ }
+
+ public function profile()
+    {
+       
+        return $this->hasOne(Profile::class);
+    }
+
 }

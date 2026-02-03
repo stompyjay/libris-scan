@@ -17,7 +17,7 @@ return new class extends Migration
         // Relación con el usuario (si borras usuario, se borra perfil)
         $table->foreignId('user_id')->constrained()->onDelete('cascade')->unique();
 
-        // Solo guardamos Apellido y Teléfono
+        $table->string('nombre');
         $table->string('surname')->nullable(); 
         $table->string('phone')->nullable();   
 

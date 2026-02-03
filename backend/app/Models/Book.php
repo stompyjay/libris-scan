@@ -9,33 +9,28 @@ class Book extends Model
 {
     use HasFactory;
 
+    // Campos que permitimos rellenar masivamente
     protected $fillable = [
-        'user_id', 
-        'category_id', 
         'title', 
-        'isbn', 
+        'author', 
+        'category_id', 
         'cover_id', 
-        'description', 
-        'status'
+        'cover',    // <--- AÑADE ESTO (para la URL de la imagen)
+        'isbn',     // <--- AÑADE ESTO
+        'price'     // <--- AÑADE ESTO (Ya lo tenías, pero revisa)
     ];
 
-    // Relación 1:N Inversa (Un libro pertenece a UN usuario)
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    // Relación 1:N Inversa (Un libro pertenece a UNA categoría)
+    // 1. RELACIÓN CON CATEGORÍA (Esta es la que faltaba y causaba el error)
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    // --- AQUÍ ESTÁ EL REQUISITO N:M ---
-    // Relación N:M (Un libro pertenece a MUCHOS autores)
-    public function authors()
+    // 2. RELACIÓN CON USUARIOS (Para saber quién compró el libro)
+    public function users()
     {
-        // Laravel busca automáticamente la tabla pivote 'author_book'
-        return $this->belongsToMany(Author::class);
+        return $this->belongsToMany(User::class, 'book_user')
+                    ->withPivot('status')
+                    ->withTimestamps();
     }
 }

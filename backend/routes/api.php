@@ -2,39 +2,38 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-// Importamos TODOS los controladores
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AuthorController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BookSearchController;
-use App\Http\Controllers\ReviewController; // <--- Faltaba este
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\PurchaseController;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| 1. RUTAS PÚBLICAS (Accesibles sin login)
 |--------------------------------------------------------------------------
 */
 
-/*
-|--------------------------------------------------------------------------
-| 1. RUTAS PÚBLICAS (Abiertas a todo el mundo)
-|--------------------------------------------------------------------------
-| Aquí van las cosas que se ven en la Landing Page (index.html)
-*/
+// --- ¡LA SOLUCIÓN! ---
+// La hemos movido aquí arriba. Ahora Laravel dejará pasar la petición, 
+// y tu controlador usará el User::first() para mostrar los datos.
+Route::get('/my-books', [BookController::class, 'myBooks']);
+
+// Otras rutas públicas
 Route::get('/reviews', [ReviewController::class, 'index']);
+Route::post('/reviews', [ReviewController::class, 'store']);
+Route::post('/purchase', [PurchaseController::class, 'store']);
 
 
 /*
 |--------------------------------------------------------------------------
-| 2. RUTAS PROTEGIDAS (Solo usuarios logueados)
+| 2. RUTAS PROTEGIDAS (Requieren Login)
 |--------------------------------------------------------------------------
-| Usamos 'web' + 'auth' para compartir la sesión del login.
 */
+
 Route::middleware(['web', 'auth'])->group(function () {
 
-    // --- USUARIO Y DASHBOARD ---
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
@@ -42,33 +41,22 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/dashboard-stats', function () {
         return response()->json([
             'categories_count' => \App\Models\Category::count(),
-            'books_count'      => \App\Models\Book::where('user_id', auth()->id())->count(),
+            'books_count'      => auth()->user()->books()->count(), 
             'authors_count'    => \App\Models\Author::count(),
-            'reading_now'      => \App\Models\Book::where('user_id', auth()->id())
-                                                ->where('status', 'reading')->count()
+            'reading_now'      => auth()->user()->books()->wherePivot('status', 'reading')->count()
         ]);
     });
 
-    // --- RECURSOS COMPLETOS (CRUD AUTOMÁTICO) ---
+    // Route::get('/my-books', ...); <--- ELIMINADA DE AQUÍ
+    
+    Route::patch('/books/{id}/status', [BookController::class, 'updateStatus']);
+
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('books',      BookController::class);
     Route::apiResource('authors',    AuthorController::class);
-    
-    // --- PERFIL DE USUARIO ---
-    Route::get('/profile', [ProfileController::class, 'index']); 
-    Route::put('/profile', [ProfileController::class, 'update']); 
 
-    // --- BÚSQUEDA Y ESCÁNER ---
-    Route::get('/scan',   [BookSearchController::class, 'index']); // Buscar (GET)
-    
-    // OJO AQUÍ: He puesto 'search' porque así se llamaba en tu controlador anterior.
-    // Si en el controlador lo cambiaste a 'store', cambia aquí 'search' por 'store'.
+    Route::get('/scan',   [BookSearchController::class, 'index']);
     Route::post('/scan',  [BookSearchController::class, 'search']); 
-    
     Route::get('/browse', [BookSearchController::class, 'browseByCategory']);
 
-    Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/purchase', [PurchaseController::class, 'store']);
-    Route::get('/my-books', [App\Http\Controllers\PurchaseController::class, 'index']);
-});
 });

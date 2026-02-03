@@ -9,9 +9,9 @@ class Profile extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'nombre', 'apellido', 'telefono'];
+    // IMPORTANTE: Estos deben coincidir con las columnas de tu migración
+    protected $fillable = ['user_id', 'nombre', 'surname', 'phone'];
 
-    // Relación 1:1 Inversa (El perfil pertenece a UN usuario)
     public function user()
     {
         return $this->belongsTo(User::class);

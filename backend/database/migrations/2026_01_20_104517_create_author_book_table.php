@@ -13,6 +13,7 @@ return new class extends Migration
     {
         // IMPORTANTE: El nombre por convención de Laravel es orden alfabético
         // Author viene antes que Book -> 'author_book'
+        //N:M
         Schema::create('author_book', function (Blueprint $table) {
             $table->id();
 

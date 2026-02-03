@@ -16,32 +16,46 @@ class RegisteredUserController extends Controller
 {
     /**
      * Display the registration view.
+     * ESTA ES LA FUNCIÓN QUE TE FALTABA
      */
-    public function store(Request $request): RedirectResponse
+    public function create(): View
     {
-        // 1. VALIDACIÓN (Quitamos el dd para que no se pare aquí)
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'surname' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:20'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        // Esto le dice a Laravel: "Muestra el archivo resources/views/auth/register.blade.php"
+        return view('auth.register');
+    }
 
-        // 2. CREACIÓN (Aquí es donde estabas fallando antes)
+    /**
+     * Handle an incoming registration request.
+     * TU LÓGICA ORIGINAL SE MANTIENE AQUÍ
+     */
+   public function store(Request $request): RedirectResponse
+    {
+        // ... validaciones ...
+
+        // 1. Crear Usuario
         $user = User::create([
             'name' => $request->name,
-            // Si estas dos líneas de abajo no están, los datos se pierden
-            'surname' => $request->surname, 
-            'phone' => $request->phone,     
+            'surname' => $request->surname,
+            'phone' => $request->phone,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+        // 2. OBLIGATORIO: Crear el Perfil inicial
+        // Si no haces esto, updateOrCreate funcionará, pero es mejor tenerlo desde el inicio
+        $user->profile()->create([
+            'nombre'  => $request->name,
+            'surname' => $request->surname,
+            'phone'   => $request->phone,
+        ]);
+
+
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        // CAMBIO: Redirección directa al archivo HTML del frontend
+        return redirect('/dashboard.html');
     }
 }

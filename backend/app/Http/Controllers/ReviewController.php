@@ -2,23 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Review; // Asegúrate de tener el modelo creado
+use App\Http\Controllers\Controller;
+use App\Models\Review;
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
-    /**
-     * API: Obtener reseñas para la Landing Page
-     * Es PÚBLICA (no requiere login)
-     */
+    // Método para OBTENER las reseñas
     public function index()
-{
-    // Solo obtenemos las que tengan is_visible = true (o 1)
-    $reviews = Review::where('is_visible', true)
-                     ->latest()
-                     ->take(3)
-                     ->get();
+    {
+        $reviews = Review::latest()->take(6)->get();
+        return response()->json($reviews);
+    }
 
-    return response()->json($reviews);
-}
-}
+    // Método para GUARDAR una reseña
+    // (Este método debe estar DENTRO de las llaves de la clase)
+    public function store(Request $request)
+    {
+        // 1. Validamos
+        $validated = $request->validate([
+            'user_name' => 'required|string|max:50',
+            'rating'    => 'required|integer|min:1|max:5',
+            'content'   => 'required|string|max:500',
+        ]);
+
+        // 2. Creamos
+        $review = Review::create($validated);
+
+        // 3. Respondemos
+        return response()->json($review, 201);
+    }
+} // <--- ¡LA LLAVE DE CIERRE VA AQUÍ AL FINAL!

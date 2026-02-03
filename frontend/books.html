@@ -21,7 +21,7 @@
         
         /* Foco visible para navegación por teclado */
         *:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
-        .ui-tabs-anchor:focus-visible { outline: 2px solid #fbbf24 !important; } /* Foco amarillo en pestañas */
+        .ui-tabs-anchor:focus-visible { outline: 2px solid #fbbf24 !important; }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
@@ -71,6 +71,7 @@
                             <thead class="bg-[#111827]">
                                 <tr>
                                     <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Libro</th>
+                                    <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Categoría</th>
                                     <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Autor</th>
                                     <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Estado</th>
                                 </tr>
@@ -87,6 +88,7 @@
                             <thead class="bg-[#111827]">
                                 <tr>
                                     <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Libro</th>
+                                    <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Categoría</th>
                                     <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Autor</th>
                                     <th scope="col" class="px-5 py-4 border-b border-gray-700 text-xs font-bold text-gray-300 uppercase tracking-wider">Estado</th>
                                 </tr>
@@ -129,116 +131,117 @@
     </main>
 
     <script>
-        // --- 1. INICIALIZACIÓN ---
-        $( function() {
-            $( "#tabs" ).tabs();
-        });
+    // --- 1. INICIALIZACIÓN ---
+    $(function() {
+        $("#tabs").tabs();
+    });
 
-        // Cargar libros al iniciar
-        document.addEventListener('DOMContentLoaded', loadBooks);
+    // Cargar libros al iniciar
+    document.addEventListener('DOMContentLoaded', loadBooks);
 
-        // --- 2. NAVEGACIÓN POR TECLADO ---
-        document.addEventListener('keydown', (e) => {
-            // Tecla ESCAPE: Volver al dashboard
-            if (e.key === "Escape") {
-                window.location.href = 'dashboard.html';
-            }
-        });
-
-        // --- 3. LÓGICA DE DATOS ---
-        async function loadBooks() {
-            const tableBody = document.getElementById('books-table-body');
-            const completedBody = document.getElementById('completed-books-body');
-            const totalCountSpan = document.getElementById('total-count');
-            
-            // Estado de carga (Loading)
-            const loadingRow = '<tr><td colspan="3" class="p-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando tu biblioteca...</td></tr>';
-            tableBody.innerHTML = loadingRow;
-            completedBody.innerHTML = loadingRow;
-
-            try {
-                // Simulación de token (Asegúrate de tener el sistema de login funcionando)
-                const token = localStorage.getItem('token');
-                
-                // NOTA: Si el backend falla, saltará al catch
-                const response = await fetch('/api/my-books', {
-                    headers: { 
-                        'Authorization': 'Bearer ' + token,
-                        'Accept': 'application/json'
-                    }
-                });
-
-                if (!response.ok) throw new Error(`Error ${response.status}: No se pudieron cargar los libros.`);
-
-                const myBooks = await response.json();
-                
-                // Actualizar contador
-                totalCountSpan.innerText = myBooks.length;
-
-                // Limpiar tablas
-                tableBody.innerHTML = '';
-                completedBody.innerHTML = '';
-
-                if (myBooks.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-8 text-gray-500">No tienes libros aún. <a href="dashboard.html" class="text-blue-400 hover:underline">Ve a comprar uno.</a></td></tr>';
-                    completedBody.innerHTML = '<tr><td colspan="3" class="text-center p-8 text-gray-500">Sin libros leídos.</td></tr>';
-                    return;
-                }
-
-                // Renderizar Libros
-                myBooks.forEach(book => {
-                    const title = book.title || 'Sin título';
-                    const author = book.author || 'Desconocido';
-                    // Manejo seguro de imagen
-                    const cover = book.cover_id || book.cover || 'https://via.placeholder.com/50?text=No+Cover';
-                    
-                    let statusHtml = `<span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-700 text-gray-300">${book.status}</span>`;
-                    
-                    if (book.status === 'pending') {
-                        statusHtml = `<span class="text-yellow-400 bg-yellow-900/40 border border-yellow-700/50 px-2 py-1 rounded text-xs font-bold flex items-center w-fit gap-1"><i class="far fa-clock"></i> Pendiente</span>`;
-                    } else if (book.status === 'completed') {
-                        statusHtml = `<span class="text-green-400 bg-green-900/40 border border-green-700/50 px-2 py-1 rounded text-xs font-bold flex items-center w-fit gap-1"><i class="fas fa-check"></i> Leído</span>`;
-                    }
-
-                    // CORRECCIÓN ACCESIBILIDAD: alt="${title}" añadido
-                    const row = `
-                        <tr class="border-b border-gray-800 hover:bg-[#202025] transition duration-200">
-                            <td class="p-4 flex items-center gap-4">
-                                <img src="${cover}" alt="Portada de ${title}" class="w-12 h-16 object-cover rounded shadow-md border border-gray-700"> 
-                                <span class="text-gray-200 text-sm font-bold">${title}</span>
-                            </td>
-                            <td class="p-4 text-gray-400 text-sm font-medium">${author}</td>
-                            <td class="p-4">${statusHtml}</td>
-                        </tr>
-                    `;
-
-                    // Llenar "Todos"
-                    tableBody.innerHTML += row;
-
-                    // Llenar "Leídos"
-                    if (book.status === 'completed') {
-                        completedBody.innerHTML += row;
-                    }
-                });
-
-                // Si no hay leídos, mensaje específico
-                if (completedBody.innerHTML === '') {
-                    completedBody.innerHTML = '<tr><td colspan="3" class="text-center p-8 text-gray-500 italic">Aún no has terminado ningún libro. ¡Ánimo!</td></tr>';
-                }
-
-            } catch (error) {
-                console.error("Error cargando libros:", error);
-                const errorMsg = `
-                    <tr>
-                        <td colspan="3" class="text-center p-6 bg-red-900/10 border border-red-900/50 rounded-lg m-4">
-                            <div class="text-red-400 font-bold mb-1"><i class="fas fa-exclamation-triangle"></i> Error de conexión</div>
-                            <p class="text-red-300 text-sm">No pudimos cargar tus libros. Intenta recargar la página.</p>
-                        </td>
-                    </tr>`;
-                tableBody.innerHTML = errorMsg;
-                completedBody.innerHTML = errorMsg;
-            }
+    // --- 2. NAVEGACIÓN POR TECLADO ---
+    document.addEventListener('keydown', (e) => {
+        // Tecla ESCAPE: Volver al dashboard
+        if (e.key === "Escape") {
+            window.location.href = 'dashboard.html';
         }
-    </script>
+    });
+
+    // --- 3. LÓGICA DE DATOS ---
+    async function loadBooks() {
+    const tableBody = document.getElementById('books-table-body');
+    const completedBody = document.getElementById('completed-books-body');
+    const totalCountSpan = document.getElementById('total-count');
+
+    // Estado de carga
+    tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Cargando...</td></tr>';
+
+    try {
+        const response = await fetch('/api/my-books', {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (response.status === 401) {
+            console.error("No logueado");
+            return;
+        }
+
+        const myBooks = await response.json();
+        
+        // --- DEPURACIÓN: MIRA ESTO EN LA CONSOLA (F12) ---
+        console.log("Libros recibidos:", myBooks);
+        // ------------------------------------------------
+
+        if(totalCountSpan) totalCountSpan.innerText = myBooks.length;
+        tableBody.innerHTML = '';
+        completedBody.innerHTML = '';
+
+        if (myBooks.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-gray-400">Sin libros.</td></tr>';
+            return;
+        }
+
+        myBooks.forEach(book => {
+            const title = book.title || 'Sin título';
+            const author = book.author || 'Desconocido';
+            const categoryName = book.category ? book.category.name : 'General';
+            
+            // 1. DETERMINAR LA URL DE LA IMAGEN
+            let coverSrc = null;
+
+            // Prioridad A: URL explícita en base de datos (y que no sea la de placeholder vieja)
+            if (book.cover && book.cover.length > 10 && !book.cover.includes('via.placeholder')) {
+                coverSrc = book.cover;
+            } 
+            // Prioridad B: ID de OpenLibrary
+            else if (book.cover_id) {
+                coverSrc = `https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`;
+            }
+            // Prioridad C: Imagen por defecto (Placehold.co es más rápido que via.placeholder)
+            else {
+                coverSrc = "https://placehold.co/400x600/333/FFF?text=Sin+Portada";
+            }
+
+            console.log(`Libro: ${title} | URL Imagen: ${coverSrc}`); // <--- REVISA ESTO EN CONSOLA
+
+            // HTML de la fila
+            const row = `
+                <tr class="border-b border-gray-800 hover:bg-[#202025]">
+                    <td class="p-4 flex items-center gap-4">
+                        <div class="w-12 h-16 flex-shrink-0 bg-gray-700 rounded overflow-hidden border border-gray-600">
+                            <img src="${coverSrc}" 
+                                 alt="${title}" 
+                                 class="w-full h-full object-cover"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/400x600/550000/FFF?text=Error';">
+                        </div>
+                        
+                        <div class="flex flex-col">
+                            <span class="text-gray-200 text-sm font-bold">${title}</span>
+                        </div>
+                    </td>
+
+                    <td class="p-4">
+                        <span class="bg-blue-900/30 text-blue-300 px-2 py-1 rounded text-xs border border-blue-800">
+                            ${categoryName}
+                        </span>
+                    </td>
+
+                    <td class="p-4 text-gray-400 text-sm">${author}</td>
+                    
+                    <td class="p-4 text-gray-500 text-xs">${book.status}</td>
+                </tr>
+            `;
+
+            tableBody.innerHTML += row;
+            if (book.status === 'completed') completedBody.innerHTML += row;
+        });
+
+    } catch (error) {
+        console.error("Error fatal:", error);
+    }
+}
+</script>
 </body>
 </html>

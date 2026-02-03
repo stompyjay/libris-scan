@@ -3,68 +3,75 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+
         <title>Libris-Scan</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
         <script src="https://cdn.tailwindcss.com"></script>
+        
         <script>
             tailwind.config = {
                 theme: {
                     extend: {
                         fontFamily: { sans: ['Figtree', 'sans-serif'], },
+                        animation: {
+                            'infinite-scroll': 'infinite-scroll 40s linear infinite',
+                        },
+                        keyframes: {
+                            'infinite-scroll': {
+                                from: { transform: 'translateX(0)' },
+                                to: { transform: 'translateX(-50%)' },
+                            }
+                        }
                     }
                 }
             }
         </script>
+        <style>
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        </style>
     </head>
-    <body class="antialiased bg-gray-900 text-white font-sans selection:bg-blue-500 selection:text-white">
+    <body class="antialiased bg-gray-900 text-white font-sans selection:bg-blue-500 selection:text-white overflow-x-hidden">
         
         <nav class="flex items-center justify-between p-6 max-w-7xl mx-auto">
-            <div class="text-xl font-bold tracking-wide text-white">
-                Libris-Scan
-            </div>
-            
+            <div class="text-xl font-bold tracking-wide text-white">Libris-Scan</div>
             <div class="z-10 flex gap-4">
-                <a href="http://localhost:8080/login" class="font-semibold text-gray-300 hover:text-white transition py-2">
-                    Iniciar Sesión
-                </a>
-                
-                <a href="http://localhost:8080/register" class="font-semibold text-white border border-gray-500 px-4 py-2 rounded hover:bg-gray-800 transition">
-                    Registrarse
-                </a>
+                <a href="/login" class="font-semibold text-gray-300 hover:text-white transition py-2">Iniciar Sesión</a>
+                <a href="/register" class="font-semibold text-white border border-gray-500 px-4 py-2 rounded hover:bg-gray-800 transition">Registrarse</a>
             </div>
         </nav>
 
-        <main class="max-w-7xl mx-auto px-6 flex flex-col items-center text-center mt-10">
-            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-8 leading-tight max-w-2xl text-white">
-                Digitaliza tu librería <br />
-                <span class="text-gray-400">con un simple escaneo</span>
-            </h1>
+        <main class="w-full flex flex-col items-center text-center mt-10 pb-20">
+            
+            <div class="max-w-7xl mx-auto px-6 flex flex-col items-center">
+                <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-8 leading-tight max-w-2xl text-white">
+                    Digitaliza tu librería <br />
+                    <span class="text-gray-400">con un simple escaneo</span>
+                </h1>
 
-            <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-12">
-                <a href="http://localhost:8000/register" class="flex items-center justify-center px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold transition shadow-lg w-full sm:w-64 cursor-pointer">
-                    Comenzar Ahora
-                </a>
-                
-                <button class="flex items-center justify-center px-8 py-3 bg-blue-500 bg-opacity-20 hover:bg-opacity-30 border border-blue-500 text-blue-400 rounded-full font-bold transition w-full sm:w-64">
-                    Ver Demo
-                </button>
-            </div>
+                <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-12">
+                    <a href="/register" class="flex items-center justify-center px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold transition shadow-lg w-full sm:w-64 cursor-pointer">Comenzar Ahora</a>
+                    <button class="flex items-center justify-center px-8 py-3 bg-blue-500 bg-opacity-20 hover:bg-opacity-30 border border-blue-500 text-blue-400 rounded-full font-bold transition w-full sm:w-64">Ver Demo</button>
+                </div>
 
-            <div class="relative w-64 h-96 sm:w-72 sm:h-[28rem] bg-gray-800 rounded-3xl border-4 border-gray-700 shadow-2xl overflow-hidden mb-16 flex flex-col mx-auto">
-                <div class="absolute top-0 left-0 w-full h-full bg-gray-700 opacity-60"></div>
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <div class="w-48 h-32 border-2 border-blue-400 rounded-lg relative animate-pulse">
-                        <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-white -mt-1 -ml-1"></div>
-                        <div class="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-white -mt-1 -mr-1"></div>
-                        <div class="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-white -mb-1 -ml-1"></div>
-                        <div class="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-white -mb-1 -mr-1"></div>
-                        <div class="absolute bottom-2 left-0 right-0 text-center text-xs font-mono text-white bg-black bg-opacity-50 mx-2 rounded">Scanning ISBN...</div>
+                <div class="relative w-64 h-96 sm:w-72 sm:h-[28rem] bg-gray-800 rounded-3xl border-4 border-gray-700 shadow-2xl overflow-hidden mb-16 flex flex-col mx-auto">
+                    <div class="absolute top-0 left-0 w-full h-full bg-gray-700 opacity-60"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-48 h-32 border-2 border-blue-400 rounded-lg relative animate-pulse">
+                            <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-white -mt-1 -ml-1"></div>
+                            <div class="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-white -mt-1 -mr-1"></div>
+                            <div class="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-white -mb-1 -ml-1"></div>
+                            <div class="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-white -mb-1 -mr-1"></div>
+                            <div class="absolute bottom-2 left-0 right-0 text-center text-xs font-mono text-white bg-black bg-opacity-50 mx-2 rounded">Scanning ISBN...</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-4xl mb-20 text-left mx-auto">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-4xl mb-20 text-left mx-auto px-6">
                 <div class="bg-gray-800 bg-opacity-50 p-6 rounded-2xl border border-gray-700 flex items-start gap-4">
                     <div class="bg-gray-700 p-3 rounded-xl shrink-0 text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
@@ -86,6 +93,169 @@
                 </div>
             </div>
 
+            <section class="w-full overflow-hidden mb-20">
+                <h2 class="text-3xl font-bold text-white text-center mb-10">Lo que dicen nuestros lectores</h2>
+                
+                <div id="reviews-wrapper" class="relative w-full overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
+                    <div id="reviews-track" class="flex items-center animate-infinite-scroll w-max hover:[animation-play-state:paused]">
+                        <div class="w-screen flex justify-center py-10">
+                             <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="w-full max-w-2xl px-6">
+                <div class="bg-gray-800 p-8 rounded-2xl border border-gray-700 shadow-xl text-left">
+                    <h3 class="text-2xl font-bold text-white mb-2">Déjanos tu opinión</h3>
+                    <p class="text-gray-400 mb-6 text-sm">Tu opinión ayuda a otros lectores a organizar mejor sus bibliotecas.</p>
+                    
+                    <form id="review-form" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Nombre</label>
+                                <input type="text" id="name" required class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Tu nombre">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Puntuación</label>
+                                <select id="rating" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="5">★★★★★ (Excelente)</option>
+                                    <option value="4">★★★★☆ (Muy bueno)</option>
+                                    <option value="3">★★★☆☆ (Bueno)</option>
+                                    <option value="2">★★☆☆☆ (Regular)</option>
+                                    <option value="1">★☆☆☆☆ (Malo)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Comentario</label>
+                            <textarea id="content" required rows="3" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="¿Qué te ha parecido la experiencia?"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300 shadow-lg flex justify-center items-center gap-2">
+                            <span>Enviar Reseña</span>
+                            <svg id="btn-spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+                    </form>
+                    <div id="form-message" class="mt-4 text-center text-sm font-semibold hidden"></div>
+                </div>
+            </section>
+
         </main>
+
+        <script>
+            // Función para obtener el CSRF Token (Seguridad de Laravel)
+            function getCsrfToken() {
+                const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+                return tokenMeta ? tokenMeta.getAttribute('content') : '';
+            }
+
+            // --- CARGAR RESEÑAS (CARRUSEL) ---
+            async function loadReviews() {
+                const containerParent = document.getElementById('reviews-wrapper');
+                const containerTrack = document.getElementById('reviews-track');
+
+                try {
+                    // Llamada a la API
+                    const response = await fetch('/api/reviews');
+                    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+                    
+                    const reviewsOriginal = await response.json();
+
+                    if (reviewsOriginal.length === 0) {
+                        containerParent.innerHTML = '<p class="text-center text-gray-500 py-10">Aún no hay reseñas en la base de datos. ¡Sé el primero!</p>';
+                        return;
+                    }
+
+                    // Duplicamos para efecto infinito
+                    const reviews = [...reviewsOriginal, ...reviewsOriginal];
+                    containerTrack.innerHTML = ''; 
+
+                    reviews.forEach(review => {
+                        const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+                        const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(review.user_name)}&background=2563eb&color=fff&size=128`;
+                        const date = new Date(review.created_at).toLocaleDateString();
+
+                        const cardHtml = `
+                            <div class="w-80 flex-shrink-0 mx-4 bg-gray-800 bg-opacity-40 p-6 rounded-2xl border border-gray-700 hover:border-blue-500 transition duration-300 flex flex-col h-64">
+                                <div class="flex items-center gap-4 mb-4">
+                                    <img src="${avatar}" alt="${review.user_name}" class="w-10 h-10 rounded-full bg-gray-700">
+                                    <div>
+                                        <h4 class="font-bold text-white text-sm truncate w-40">${review.user_name}</h4>
+                                        <div class="text-yellow-400 text-xs tracking-widest">${stars}</div>
+                                    </div>
+                                </div>
+                                <p class="text-gray-300 text-sm italic flex-grow overflow-hidden text-ellipsis line-clamp-4">"${review.content}"</p>
+                                <div class="mt-2 text-xs text-gray-500 text-right">${date}</div>
+                            </div>
+                        `;
+                        containerTrack.insertAdjacentHTML('beforeend', cardHtml);
+                    });
+                } catch (error) {
+                    console.error('Error cargando reseñas:', error);
+                    containerParent.innerHTML = `<p class="text-center text-red-400 py-10">Error de conexión: Asegúrate de que la base de datos tiene datos.</p>`;
+                }
+            }
+
+            // --- ENVIAR RESEÑA (FORMULARIO) ---
+            document.getElementById('review-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const btn = this.querySelector('button');
+                const spinner = document.getElementById('btn-spinner');
+                const msg = document.getElementById('form-message');
+                
+                // UI Loading state
+                btn.disabled = true;
+                btn.classList.add('opacity-75');
+                spinner.classList.remove('hidden');
+                msg.classList.add('hidden');
+
+                const data = {
+                    user_name: document.getElementById('name').value,
+                    rating: document.getElementById('rating').value,
+                    content: document.getElementById('content').value
+                };
+
+                try {
+                    const response = await fetch('/api/reviews', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            // AQUÍ ESTÁ LA SOLUCIÓN DEL FORMULARIO:
+                            'X-CSRF-TOKEN': getCsrfToken() 
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        msg.textContent = "¡Gracias! Tu reseña se ha publicado.";
+                        msg.className = "mt-4 text-center text-sm font-semibold text-green-400 block";
+                        document.getElementById('review-form').reset();
+                        // Recargamos el carrusel y lo reiniciamos
+                        loadReviews(); 
+                    } else {
+                        // Intentamos leer el error del servidor
+                        const errorData = await response.json().catch(() => ({}));
+                        console.error("Error del servidor:", errorData);
+                        throw new Error('Error al enviar');
+                    }
+                } catch (error) {
+                    msg.textContent = "Hubo un error al enviar la reseña. Revisa la consola (F12) para más detalles.";
+                    msg.className = "mt-4 text-center text-sm font-semibold text-red-400 block";
+                } finally {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-75');
+                    spinner.classList.add('hidden');
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', loadReviews);
+        </script>
     </body>
 </html>

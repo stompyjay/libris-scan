@@ -48,7 +48,7 @@
         </nav>
 
         <div class="mt-auto border-t border-gray-800 pt-6 space-y-4">
-            <a href="profile.html" class="flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-800 rounded-xl transition">
+            <a href="/profile" class="flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-800 rounded-xl transition">
                 <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold" aria-hidden="true">👤</div>
                 <div>
                     <p id="sidebar-name" class="text-sm font-bold">Cargando...</p>
@@ -64,7 +64,7 @@
     <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a1e]/90 backdrop-blur-md border-t border-gray-800 px-6 py-3 flex justify-between items-center z-50 md:hidden" aria-label="Menú móvil">
         <a href="dashboard.html" class="text-blue-500 flex flex-col items-center gap-1" aria-label="Tienda"><i class="fas fa-shopping-bag text-xl"></i></a>
         <a href="books.html" class="text-gray-400 flex flex-col items-center gap-1" aria-label="Mis Libros"><i class="fas fa-bookmark text-xl"></i></a>
-        <a href="profile.html" class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white" aria-label="Perfil">👤</a>
+        <a href="/profile" class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white" aria-label="Perfil">👤</a>
         <button onclick="logout()" class="text-red-400 flex flex-col items-center gap-1" aria-label="Cerrar sesión"><i class="fas fa-sign-out-alt text-xl"></i></button>
     </nav>
 
@@ -74,7 +74,7 @@
             <header class="py-6">
                 <div class="flex items-center justify-between mb-8">
                     <div class="flex items-center gap-4">
-                        <a href="profile.html" class="md:hidden w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white" aria-label="Ir a perfil">👤</a>
+                        <a href="/profile" class="md:hidden w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white" aria-label="Ir a perfil">👤</a>
                         <div>
                             <h1 class="text-2xl font-black">Hola, <span id="header-name" class="text-blue-500">Lector</span></h1>
                             <p class="text-xs text-gray-300 uppercase tracking-widest font-bold">Miembro Premium</p>
@@ -83,51 +83,49 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-800 shadow-2xl">
-                    <div class="md:col-span-1">
+                    <div class="md:col-span-1 h-full">
                         <label for="category-select" class="sr-only">Seleccionar Categoría</label>
-                        <div class="md:col-span-1 h-full">
-    <label for="category-select" class="sr-only">Seleccionar Categoría</label>
-    <select id="category-select" onchange="searchByCategory()" 
-            class="w-full category-select text-sm font-bold h-full bg-[#1a1a1e] text-white border border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 custom-scrollbar">
-        
-        <option value="">📚 Explorar todo</option>
+                        <select id="category-select" onchange="searchByCategory()" 
+                                class="w-full category-select text-sm font-bold h-full bg-[#1a1a1e] text-white border border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 custom-scrollbar">
+                            
+                            <option value="fiction">📚 Explorar todo</option>
 
-        <optgroup label="Géneros Literarios">
-            <option value="novel">Novela</option>
-            <option value="short_story">Cuento / Relato</option>
-            <option value="poetry">Poesía</option>
-            <option value="plays">Teatro / Dramaturgia</option>
-            <option value="essay">Ensayo</option>
-            <option value="fables">Fábulas</option>
-            <option value="legends">Mitos y Leyendas</option>
-            <option value="biography">Biografías y Memorias</option>
-            <option value="chronicle">Crónica</option>
-        </optgroup>
+                            <optgroup label="Géneros Literarios">
+                                <option value="novel">Novela</option>
+                                <option value="short_story">Cuento / Relato</option>
+                                <option value="poetry">Poesía</option>
+                                <option value="plays">Teatro / Dramaturgia</option>
+                                <option value="essay">Ensayo</option>
+                                <option value="fables">Fábulas</option>
+                                <option value="legends">Mitos y Leyendas</option>
+                                <option value="biography">Biografías y Memorias</option>
+                                <option value="chronicle">Crónica</option>
+                            </optgroup>
 
-        <optgroup label="Temáticas y Colecciones">
-            <option value="children">Infantil y Juvenil 🧸</option>
-            <option value="fantasy">Fantasía y Magia 🧙‍♂️</option>
-            <option value="science_fiction">Ciencia Ficción 🚀</option>
-            <option value="mystery_and_detective_stories">Misterio y Policial 🔍</option>
-            <option value="horror">Terror y Sobrenatural 👻</option>
-            <option value="romance">Romance y Sentimientos ❤️</option>
-            <option value="historical">Novela Histórica 🏛️</option>
-            <option value="philosophy">Filosofía y Pensamiento 🧠</option>
-            <option value="adventure">Aventuras y Viajes 🌍</option>
-            <option value="humor">Humor y Sátira 😄</option>
-            <option value="psychology">Psicológico</option>
-        </optgroup>
+                            <optgroup label="Temáticas y Colecciones">
+                                <option value="children">Infantil y Juvenil 🧸</option>
+                                <option value="fantasy">Fantasía y Magia 🧙‍♂️</option>
+                                <option value="science_fiction">Ciencia Ficción 🚀</option>
+                                <option value="mystery_and_detective_stories">Misterio y Policial 🔍</option>
+                                <option value="horror">Terror y Sobrenatural 👻</option>
+                                <option value="romance">Romance y Sentimientos ❤️</option>
+                                <option value="historical">Novela Histórica 🏛️</option>
+                                <option value="philosophy">Filosofía y Pensamiento 🧠</option>
+                                <option value="adventure">Aventuras y Viajes 🌍</option>
+                                <option value="humor">Humor y Sátira 😄</option>
+                                <option value="psychology">Psicológico</option>
+                            </optgroup>
 
-        <optgroup label="Formatos Especiales">
-            <option value="audiobooks">Audiolibros 🎧</option>
-            <option value="textbooks">Manuales y Didáctica</option>
-            <option value="art">Arte y Arquitectura</option>
-            <option value="recipes">Gastronomía y Cocina</option>
-        </optgroup>
+                            <optgroup label="Formatos Especiales">
+                                <option value="audiobooks">Audiolibros 🎧</option>
+                                <option value="textbooks">Manuales y Didáctica</option>
+                                <option value="art">Arte y Arquitectura</option>
+                                <option value="recipes">Gastronomía y Cocina</option>
+                            </optgroup>
 
-    </select>
-</div>
+                        </select>
                     </div>
+
                     <div class="md:col-span-3 flex gap-2">
                         <div class="relative flex-1">
                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
@@ -179,7 +177,7 @@
             </button>
             <div class="flex flex-col md:flex-row">
                 <div class="md:w-1/2 bg-gray-100 p-8 flex items-center justify-center">
-                    <img id="modal-img" src="" alt="" class="shadow-2xl rounded-lg max-h-72 object-cover" onerror="this.src='https://via.placeholder.com/150x220?text=No+Cover'">
+                    <img id="modal-img" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Portada del libro" class="shadow-2xl rounded-lg max-h-72 object-cover" onerror="this.src='https://placehold.co/150x220/1a1a1e/FFFFFF?text=Sin+Portada'">
                 </div>
                 <div class="md:w-1/2 p-10">
                     <span class="text-blue-600 font-black text-[10px] uppercase mb-2 block">Versión Digital</span>
@@ -212,51 +210,89 @@
         try {
             const response = await fetch(`${API_BASE_URL}/user`, {
                 method: 'GET',
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                credentials: 'include', 
+                headers: { 
+                    'Accept': 'application/json', 
+                    'X-Requested-With': 'XMLHttpRequest' 
+                }
             });
-            if (response.status === 401) { window.location.href = 'index.html'; return; }
+
+            if (!response.ok) {
+                console.log("Estado de la respuesta:", response.status);
+            }
+
+            if (response.status === 401) { 
+                window.location.href = '/'; 
+                console.log("Sesión expirada. Redirigiendo al login.");
+                return; 
+            }
+
             if (response.ok) {
                 const userData = await response.json();
-                document.getElementById('header-name').innerText = userData.name;
-                document.getElementById('sidebar-name').innerText = userData.name;
+                const headerName = document.getElementById('header-name');
+                const sidebarName = document.getElementById('sidebar-name');
+
+                if(headerName) headerName.innerText = userData.name;
+                if(sidebarName) sidebarName.innerText = userData.name;
             }
-        } catch (error) { console.error(error); }
+        } catch (error) { 
+            console.error("Error cargando perfil:", error); 
+        }
     }
 
     async function logout() {
-        if(!confirm("¿Cerrar sesión?")) return;
-        try { await fetch('/logout', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); } 
-        catch (e) {} finally { window.location.href = 'index.html'; }
+    if(!confirm("¿Cerrar sesión?")) return;
+
+    try { 
+        // 1. Obtener el token (Laravel lo guarda en la cookie XSRF-TOKEN)
+        const token = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('XSRF-TOKEN='))
+            ?.split('=')[1];
+
+        await fetch('/logout', { 
+            method: 'POST', 
+            credentials: 'include',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(token) // <--- ESTO ES LA CLAVE
+            } 
+        }); 
+
+        // 2. Limpiar datos del Frontend (Importante para evitar caché de libros)
+        localStorage.removeItem('myBooks');
+        localStorage.removeItem('carritoParaPagar');
+        // O si prefieres borrar todo: localStorage.clear();
+
+    } catch (e) { 
+        console.error("Error al intentar cerrar sesión:", e); 
+    } finally { 
+        // 3. Redirigir siempre, pase lo que pase
+        window.location.href = '/'; 
     }
+}
 
     // --- FUNCIÓN AUXILIAR PARA OBTENER LA MEJOR IMAGEN ---
     function getBestCover(book) {
-        // Prioridad 1: ID directo de API (Search = cover_i, Subject = cover_id)
         if (book.cover_id) return `https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`;
         if (book.cover_i) return `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`;
-        
-        // Prioridad 2: URL completa desde Base de Datos
         if (book.cover_url && book.cover_url.startsWith('http')) return book.cover_url;
-
-        // Prioridad 3: ISBN
         if (book.isbn) {
             const isbnVal = Array.isArray(book.isbn) ? book.isbn[0] : book.isbn;
             return `https://covers.openlibrary.org/b/isbn/${isbnVal}-M.jpg`;
         }
-
-        // Fallback
-        return 'https://via.placeholder.com/150x220?text=No+Cover';
+        return `https://placehold.co/150x220/1a1a1e/FFFFFF?text=Sin+Portada`;
     }
 
-    // --- FUNCIÓN AUXILIAR PARA OBTENER EL MEJOR AUTOR ---
     function getBestAuthor(book) {
-        if (book.author) return book.author; // DB
-        if (Array.isArray(book.author_name)) return book.author_name[0]; // Search API
-        if (Array.isArray(book.authors)) return book.authors[0].name; // Subject API
+        if (book.author) return book.author;
+        if (Array.isArray(book.author_name)) return book.author_name[0];
+        if (Array.isArray(book.authors)) return book.authors[0].name;
         return 'Autor desconocido';
     }
 
-    // 2. RENDERIZADO MEJORADO (SOLUCIÓN A LAS FOTOS ROTAS)
+    // 2. RENDERIZADO
     function renderBooks(books) {
         currentBooks = books; 
         const grid = document.getElementById('api-results-grid');
@@ -283,7 +319,7 @@
                         <img src="${cover}" 
                              alt="Portada de ${titleSafe}" 
                              loading="lazy"
-                             onerror="this.onerror=null; this.src='https://via.placeholder.com/150x220?text=No+Disponible';"
+                             onerror="this.onerror=null; this.src='https://placehold.co/150x220/1a1a1e/FFFFFF?text=No+Disponible';"
                              class="w-full h-full object-cover group-hover:scale-110 transition duration-500 pointer-events-none">
                     </div>
                     <div class="p-4">
@@ -322,15 +358,34 @@
     }
 
     function prepararYAgregar(rawBook) {
-        // Usamos las mismas funciones auxiliares para asegurar consistencia
         const cover = getBestCover(rawBook);
         const author = getBestAuthor(rawBook);
-            
+        
+        // --- 1. CAPTURAR LA CATEGORÍA SELECCIONADA ---
+        const categorySelect = document.getElementById('category-select');
+        
+        // Obtenemos el valor del desplegable. Si está vacío, ponemos 'fiction' por defecto.
+        // Esto coge el "value" del option (ej: 'science_fiction', 'horror', etc.)
+        const currentCategory = categorySelect && categorySelect.value ? categorySelect.value : 'fiction';
+
         const bookForCart = {
             title: rawBook.title,
             author: author,
-            cover: cover
+            cover: cover,
+            
+            // --- 2. DATOS CRÍTICOS AÑADIDOS ---
+            
+            // A. Para guardar la foto correctamente (solución anterior)
+            // OpenLibrary a veces lo llama cover_i y a veces cover_id
+            cover_id: rawBook.cover_i || rawBook.cover_id || null, 
+            
+            // B. ISBN (Opcional pero recomendado)
+            isbn: rawBook.isbn ? (Array.isArray(rawBook.isbn) ? rawBook.isbn[0] : rawBook.isbn) : 'N/A',
+            
+            // C. La categoría seleccionada para guardar en base de datos
+            category_name: currentCategory 
         };
+        
         addToCart(bookForCart);
     }
 
@@ -341,6 +396,7 @@
         const author = getBestAuthor(book);
 
         const imgEl = document.getElementById('modal-img');
+        // Importante: Setear el src aquí fuerza la recarga de la imagen correcta
         imgEl.src = cover;
         imgEl.alt = "Portada de " + book.title;
 
@@ -370,7 +426,6 @@
 
     // 5. CARRITO
     function addToCart(book) {
-        // Evitar duplicados por título
         if(cart.find(b => b.title === book.title)) return;
         cart.push(book);
         renderCart();
@@ -397,7 +452,7 @@
             <div class="flex items-center gap-2 bg-black/40 p-2 rounded border border-gray-700 animate-[fadeIn_0.3s]">
                 <img src="${book.cover}" alt="" 
                      class="w-8 h-12 object-cover rounded"
-                     onerror="this.src='https://via.placeholder.com/150x220?text=Err'">
+                     onerror="this.src='https://placehold.co/150x220/1a1a1e/FFFFFF?text=Err'">
                 <div class="flex-1 min-w-0">
                     <p class="text-[10px] font-bold truncate text-white">${book.title}</p>
                     <p class="text-[9px] text-gray-400">9.95€</p>
@@ -414,12 +469,9 @@
         renderCart();
     };
 
-    // --- FUNCIÓN DE CHECKOUT INTACTA ---
     window.checkoutAll = function() {
         if(cart.length === 0) { alert("El carrito está vacío"); return; }
-        // Guardamos el carrito para recuperarlo en shop.html
         localStorage.setItem('carritoParaPagar', JSON.stringify(cart));
-        // REDIRECCIÓN OBLIGATORIA
         window.location.href = 'shop.html';
     };
 

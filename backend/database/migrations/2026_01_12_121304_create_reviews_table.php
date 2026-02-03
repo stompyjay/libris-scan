@@ -13,10 +13,9 @@ return new class extends Migration
 {
     Schema::create('reviews', function (Blueprint $table) {
         $table->id();
-        $table->string('user_name'); // Nombre de quien deja la reseña
-        $table->text('content');     // El texto de la opinión
+        $table->string('user_name'); // Nombre de quien opina
+        $table->text('content');     // El comentario
         $table->integer('rating');   // 1 a 5 estrellas
-        $table->boolean('is_visible')->default(true); // Para ocultarlas si quieres
         $table->timestamps();
     });
 }

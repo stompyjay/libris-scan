@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\HandleCors; // <--- ESTA LÍNEA ES VITAL
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,7 +13,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // AQUÍ YA NO PONEMOS NADA DE EXCEPT, LO DEJAMOS POR DEFECTO
+        
+        // 1. Permitir que la API reciba datos sin token CSRF (necesario para el fetch)
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'stripe/*',
+        ]);
+
+        // 2. Activar el manejo de CORS
+        $middleware->append(HandleCors::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
