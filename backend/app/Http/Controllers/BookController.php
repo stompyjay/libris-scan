@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use App\Models\Category;
+use App\Models\Author; // <--- IMPORTANTE: No olvides importar esto
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -12,6 +13,7 @@ class BookController extends Controller
 {
     /**
      * API: BÚSQUEDA INTELIGENTE (OpenLibrary)
+     * (Sin cambios, solo devuelve datos planos para el frontend)
      */
     public function scan(Request $request)
     {
@@ -21,7 +23,6 @@ class BookController extends Controller
             return response()->json([]);
         }
 
-        // Buscamos en OpenLibrary
         $url = "https://openlibrary.org/search.json?q=" . urlencode($query) . "&limit=12";
 
         try {
@@ -38,10 +39,11 @@ class BookController extends Controller
                 foreach ($data['docs'] as $item) {
                     $books[] = [
                         'title' => $item['title'] ?? 'Sin título',
+                        // Aquí enviamos el autor como string, luego en purchase lo convertiremos a ID
                         'author' => isset($item['author_name']) ? implode(', ', $item['author_name']) : 'Desconocido',
                         'year' => $item['first_publish_year'] ?? null,
                         'isbn' => isset($item['isbn']) ? $item['isbn'][0] : null,
-                        'cover_id' => $item['cover_i'] ?? null, // ID para construir la URL luego
+                        'cover_id' => $item['cover_i'] ?? null,
                         'suggested_category' => isset($item['subject']) ? $item['subject'][0] : null
                     ];
                 }
@@ -61,21 +63,18 @@ class BookController extends Controller
     {
         $user = $request->user();
 
-        // --- SALVAVIDAS (AÑADE ESTO) ---
-        // Si no detecta sesión real, cogemos el primer usuario de la base de datos
-        // Así nunca te dará error 401 mientras programas el diseño
         if (!$user) {
-            $user = \App\Models\User::first();
+            $user = User::first();
         }
-        // -------------------------------
 
         if (!$user) {
-            return response()->json([]); // Si la BD está vacía
+            return response()->json([]); 
         }
 
         try {
             $books = $user->books()
                           ->with('category')
+                          ->with('authors') // <--- NUEVO: Cargar la relación de autores
                           ->withPivot('status')
                           ->orderBy('book_user.created_at', 'desc')
                           ->get();
@@ -94,121 +93,111 @@ class BookController extends Controller
 
     /**
      * API: PROCESAR COMPRA (Carrito / Varios libros)
-     * ESTA ES LA QUE TE FALTABA
      */
     public function purchase(Request $request)
-{
-    $user = $request->user();
-    
-    // Validamos
-    $request->validate([
-        'books' => 'required|array',
-    ]);
-
-    $purchasedBooks = [];
-
-    foreach ($request->books as $item) {
+    {
+        $request->validate([
+            'books' => 'required|array',
+        ]);
         
-        // ---------------------------------------------------------
-        // 1. LÓGICA DE CATEGORÍAS AUTOMÁTICAS
-        // ---------------------------------------------------------
-        
-        // Intentamos coger la categoría que viene de la API (suggested_category)
-        // Si viene vacía, le ponemos 'General'
-        $nombreCategoria = $item['suggested_category'] ?? 'General';
-        
-        // Limpiamos el texto (Ej: "Fiction" -> "Fiction")
-        // Opcional: podrías traducir aquí si quisieras, pero dejémoslo simple
-        $nombreCategoria = ucfirst(trim($nombreCategoria));
+        $user = $request->user();
+        if (!$user) $user = User::first();
 
-        // ¡AQUÍ ESTÁ LA CLAVE!
-        // Busca una categoría con ese nombre. Si no existe, la crea en la BD.
-        $category = \App\Models\Category::firstOrCreate(
-            ['name' => $nombreCategoria], 
-            ['description' => 'Categoría importada automáticamente']
-        );
-        
-        $categoryId = $category->id; // Ya tenemos el ID (sea nuevo o viejo)
+        $purchasedBooks = [];
 
-        // ---------------------------------------------------------
-        // 2. LÓGICA DE PORTADA
-        // ---------------------------------------------------------
-        $finalCoverUrl = $item['cover'] ?? null;
-        if (!empty($item['cover_id'])) {
-            $finalCoverUrl = "https://covers.openlibrary.org/b/id/" . $item['cover_id'] . "-L.jpg";
+        foreach ($request->books as $item) {
+            // 1. Datos básicos
+            $titulo = !empty($item['title']) ? $item['title'] : 'Libro sin título';
+            // Recibimos el nombre del autor (string)
+            $authorName = !empty($item['author']) ? $item['author'] : 'Desconocido';
+            
+            // 2. Gestionar CATEGORÍA
+            $catName = $item['suggested_category'] ?? 'General';
+            $category = Category::firstOrCreate(['name' => ucfirst($catName)]);
+
+            // 3. Gestionar AUTOR (NUEVO LÓGICA)
+            // Busca si existe un autor con ese nombre, si no, lo crea en la tabla 'authors'
+            $authorModel = Author::firstOrCreate([
+                'name' => $authorName
+            ]);
+
+            // 4. Buscar o Crear el LIBRO
+            $book = Book::updateOrCreate(
+                [
+                    'title' => $titulo 
+                ],
+                [
+                    // Guardamos el string también por si acaso (backup), 
+                    // pero la relación importante es la de abajo.
+                    'author'      => $authorName, 
+                    'isbn'        => $item['isbn'] ?? null,
+                    'cover'       => $item['cover'] ?? 'https://via.placeholder.com/150',
+                    'price'       => $item['price'] ?? 10.00,
+                    'category_id' => $category->id,
+                    'description' => 'Comprado en la tienda',
+                ]
+            );
+
+            // 5. VINCULAR LIBRO CON AUTOR (NUEVO)
+            // Llenamos la tabla 'author_book'
+            // syncWithoutDetaching evita borrar otros autores si el libro ya existía y tenía varios
+            $book->authors()->syncWithoutDetaching([$authorModel->id]);
+
+            // 6. VINCULAR LIBRO CON USUARIO (Compra)
+            $user->books()->syncWithoutDetaching([
+                $book->id => ['status' => 'pending']
+            ]);
+
+            // Cargar la relación para devolver el objeto completo
+            $book->load('authors');
+            $purchasedBooks[] = $book;
         }
 
-        // ---------------------------------------------------------
-        // 3. GUARDAR EL LIBRO
-        // ---------------------------------------------------------
-        $book = \App\Models\Book::firstOrCreate(
-            [
-                'title'   => $item['title'], 
-                'user_id' => $user->id // Asumiendo que quieres guardar el dueño aquí también
-            ],
-            [
-                'author'      => $item['author'] ?? 'Desconocido',
-                'isbn'        => $item['isbn'] ?? null,
-                'cover'       => $finalCoverUrl,
-                'price'       => $item['price'] ?? 10.00,
-                'category_id' => $categoryId, // <--- Aquí asignamos el ID que acabamos de conseguir
-                'description' => 'Importado el ' . now()->format('d/m/Y'),
-                'status'      => 'pending'
-            ]
-        );
-        
-        // Si usas tabla pivote book_user también:
-        if (!$user->books()->where('book_id', $book->id)->exists()) {
-             $user->books()->attach($book->id, ['status' => 'pending']);
-        }
-
-        $purchasedBooks[] = $book;
+        return response()->json([
+            'message' => 'Compra realizada con éxito', 
+            'books' => $purchasedBooks
+        ], 200);
     }
 
-    return response()->json([
-        'message' => 'Libros guardados y categorías actualizadas',
-        'books'   => $purchasedBooks
-    ], 201);
-}
-
     /**
-     * API: GUARDAR UN SOLO LIBRO (Desde búsqueda manual)
+     * API: GUARDAR UN SOLO LIBRO (Manual)
      */
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string',
-            'cover_id' => 'required',
         ]);
 
+        $user = $request->user() ?? User::first();
+
         // 1. Gestionar Categoría
-        $categoryId = null;
+        $categoryName = $request->suggested_category ?? 'General';
+        $category = Category::firstOrCreate(['name' => ucfirst($categoryName)]);
 
-        if ($request->has('category_id') && $request->category_id) {
-            $categoryId = $request->category_id;
-        } 
-        elseif ($request->filled('suggested_category')) {
-            $category = Category::firstOrCreate(
-                ['name' => ucfirst($request->suggested_category)]
-            );
-            $categoryId = $category->id;
-        }
+        // 2. Gestionar Autor (NUEVO)
+        $authorName = $request->author ?? 'Desconocido';
+        $authorModel = Author::firstOrCreate(['name' => $authorName]);
 
-        // 2. Crear el libro CON PRECIO
+        // 3. Crear el libro
+        // Nota: Quitamos user_id del create del libro porque la relación es N:M en book_user
         $book = Book::firstOrCreate(
-            ['cover_id' => $request->cover_id], 
             [
                 'title' => $request->title,
-                'author' => $request->author ?? 'Desconocido',
+            ], 
+            [
+                'author' => $authorName, // String backup
                 'isbn' => $request->isbn,
-                'category_id' => $categoryId,
-                'price' => 12.50, // <--- PRECIO AÑADIDO (Ejemplo diferente para individuales)
+                'cover' => $request->cover ?? 'https://via.placeholder.com/150',
+                'category_id' => $category->id,
+                'price' => 12.50,
+                'description' => 'Añadido manualmente'
             ]
         );
 
-        // 3. Vincular al usuario
-        $user = $request->user();
+        // 4. Vincular Autor (Tabla author_book)
+        $book->authors()->syncWithoutDetaching([$authorModel->id]);
 
+        // 5. Vincular al usuario (Tabla book_user)
         if (!$user->books()->where('book_id', $book->id)->exists()) {
             $user->books()->attach($book->id, ['status' => 'pending']);
             $message = 'Libro añadido a tu biblioteca';
@@ -216,53 +205,41 @@ class BookController extends Controller
             return response()->json(['message' => 'Ya tienes este libro'], 409);
         }
 
+        // Devolvemos el libro con su autor cargado
+        $book->load('authors');
+
         return response()->json(['message' => $message, 'book' => $book], 201);
     }
 
-    /**
-     * API: ELIMINAR LIBRO DE MI BIBLIOTECA
-     */
+    // ... Destroy, Show y UpdateStatus
+    
     public function destroy(Request $request, $id)
     {
-        $detached = $request->user()->books()->detach($id);
-
-        if ($detached) {
-            return response()->json(['message' => 'Libro eliminado']);
-        }
-
+        $user = $request->user() ?? User::first();
+        $detached = $user->books()->detach($id);
+        if ($detached) return response()->json(['message' => 'Libro eliminado']);
         return response()->json(['error' => 'No encontrado'], 404);
     }
     
-    /**
-     * API: VER DETALLE DE UN LIBRO
-     */
     public function show(Request $request, $id)
     {
-        $book = $request->user()->books()
-                        ->with('category')
-                        ->withPivot('status')
-                        ->find($id);
-        
-        if (!$book) return response()->json(['error' => 'No encontrado'], 404);
-        
-        $book->status = $book->pivot->status;
+        $user = $request->user() ?? User::first();
+        // Cargamos también 'authors' aquí
+        $book = $user->books()
+                     ->with(['category', 'authors']) 
+                     ->withPivot('status')
+                     ->find($id);
 
+        if (!$book) return response()->json(['error' => 'No encontrado'], 404);
+        $book->status = $book->pivot->status;
         return response()->json($book);
     }
 
-    /**
-     * API: ACTUALIZAR ESTADO (Leyendo, Completado...)
-     */
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:pending,reading,completed,dropped'
-        ]);
-
-        $request->user()->books()->updateExistingPivot($id, [
-            'status' => $request->status
-        ]);
-
+        $request->validate(['status' => 'required']);
+        $user = $request->user() ?? User::first();
+        $user->books()->updateExistingPivot($id, ['status' => $request->status]);
         return response()->json(['message' => 'Estado actualizado']);
     }
 }

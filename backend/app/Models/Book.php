@@ -9,24 +9,30 @@ class Book extends Model
 {
     use HasFactory;
 
-    // Campos que permitimos rellenar masivamente
     protected $fillable = [
-        'title', 
-        'author', 
-        'category_id', 
-        'cover_id', 
-        'cover',    // <--- AÑADE ESTO (para la URL de la imagen)
-        'isbn',     // <--- AÑADE ESTO
-        'price'     // <--- AÑADE ESTO (Ya lo tenías, pero revisa)
+        'category_id',
+        'title',
+        'author', // Mantenemos esto por compatibilidad visual rápida, aunque la relación real estará en author_book
+        'cover',
+        'description',
+        'isbn',
+        'price',
     ];
 
-    // 1. RELACIÓN CON CATEGORÍA (Esta es la que faltaba y causaba el error)
+    // 1. RELACIÓN CON CATEGORÍA
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    // 2. RELACIÓN CON USUARIOS (Para saber quién compró el libro)
+    // 2. RELACIÓN CON AUTORES (NUEVO E IMPORTANTE)
+    // Esto permite usar $book->authors para ver los datos de la tabla authors
+    public function authors()
+    {
+        return $this->belongsToMany(Author::class, 'author_book');
+    }
+
+    // 3. RELACIÓN CON USUARIOS
     public function users()
     {
         return $this->belongsToMany(User::class, 'book_user')

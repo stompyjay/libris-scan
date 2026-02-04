@@ -23,7 +23,7 @@ Route::get('/my-books', [BookController::class, 'myBooks']);
 // Otras rutas públicas
 Route::get('/reviews', [ReviewController::class, 'index']);
 Route::post('/reviews', [ReviewController::class, 'store']);
-Route::post('/purchase', [PurchaseController::class, 'store']);
+Route::post('/purchase', [BookController::class, 'purchase']);
 
 
 /*

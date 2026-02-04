@@ -241,37 +241,36 @@
     }
 
     async function logout() {
-    if(!confirm("¿Cerrar sesión?")) return;
+        if(!confirm("¿Cerrar sesión?")) return;
 
-    try { 
-        // 1. Obtener el token (Laravel lo guarda en la cookie XSRF-TOKEN)
-        const token = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('XSRF-TOKEN='))
-            ?.split('=')[1];
+        try { 
+            // 1. Obtener el token XSRF
+            const token = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('XSRF-TOKEN='))
+                ?.split('=')[1];
 
-        await fetch('/logout', { 
-            method: 'POST', 
-            credentials: 'include',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': decodeURIComponent(token) // <--- ESTO ES LA CLAVE
-            } 
-        }); 
+            await fetch('/logout', { 
+                method: 'POST', 
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-XSRF-TOKEN': decodeURIComponent(token)
+                } 
+            }); 
 
-        // 2. Limpiar datos del Frontend (Importante para evitar caché de libros)
-        localStorage.removeItem('myBooks');
-        localStorage.removeItem('carritoParaPagar');
-        // O si prefieres borrar todo: localStorage.clear();
+            // 2. Limpiar datos del Frontend
+            localStorage.removeItem('myBooks');
+            localStorage.removeItem('carritoParaPagar');
 
-    } catch (e) { 
-        console.error("Error al intentar cerrar sesión:", e); 
-    } finally { 
-        // 3. Redirigir siempre, pase lo que pase
-        window.location.href = '/'; 
+        } catch (e) { 
+            console.error("Error al intentar cerrar sesión:", e); 
+        } finally { 
+            // 3. Redirigir siempre
+            window.location.href = '/'; 
+        }
     }
-}
 
     // --- FUNCIÓN AUXILIAR PARA OBTENER LA MEJOR IMAGEN ---
     function getBestCover(book) {
@@ -292,6 +291,14 @@
         return 'Autor desconocido';
     }
 
+    function getBestCategory(book) {
+        // La API de búsqueda devuelve 'subject' (array de strings)
+        if (book.subject && Array.isArray(book.subject) && book.subject.length > 0) {
+            return book.subject[0]; // Devolvemos solo la primera categoría
+        }
+        return 'General';
+    }
+
     // 2. RENDERIZADO
     function renderBooks(books) {
         currentBooks = books; 
@@ -305,25 +312,31 @@
         grid.innerHTML = books.map((book, index) => {
             const cover = getBestCover(book);
             const author = getBestAuthor(book);
+            const category = getBestCategory(book); 
             const titleSafe = (book.title || "Sin Título").replace(/"/g, '&quot;'); 
 
             return `
                 <button 
-                    class="book-card cursor-pointer group animate-[fadeIn_0.3s] relative bg-[#1a1a1e]"
+                    class="book-card cursor-pointer group animate-[fadeIn_0.3s] relative bg-[#1a1a1e] flex flex-col h-full"
                     onclick="openProductModal(${index})" 
                     draggable="true"
                     ondragstart="empezarArrastre(event, ${index})"
                     aria-label="Ver detalles de ${titleSafe}"
                 >
-                    <div class="overflow-hidden h-56 relative bg-gray-800">
+                    <div class="overflow-hidden h-56 relative bg-gray-800 w-full">
                         <img src="${cover}" 
                              alt="Portada de ${titleSafe}" 
                              loading="lazy"
                              onerror="this.onerror=null; this.src='https://placehold.co/150x220/1a1a1e/FFFFFF?text=No+Disponible';"
                              class="w-full h-full object-cover group-hover:scale-110 transition duration-500 pointer-events-none">
+                        
+                        <span class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg border border-white/10 shadow-lg">
+                            ${category}
+                        </span>
                     </div>
-                    <div class="p-4">
-                        <h4 class="font-bold text-xs truncate text-white text-left">${book.title}</h4>
+
+                    <div class="p-4 flex flex-col flex-1 w-full">
+                        <h4 class="font-bold text-xs truncate text-white text-left mb-1">${book.title}</h4>
                         <p class="text-[10px] text-gray-400 truncate text-left">${author}</p>
                     </div>
                 </button>
@@ -357,35 +370,24 @@
         });
     }
 
+    // --- AQUÍ ESTABA EL ERROR Y ESTA ES LA CORRECCIÓN ---
     function prepararYAgregar(rawBook) {
-        const cover = getBestCover(rawBook);
+        // Usamos la función auxiliar porque rawBook.suggested_category NO existe en la API
+        const category = getBestCategory(rawBook);
         const author = getBestAuthor(rawBook);
-        
-        // --- 1. CAPTURAR LA CATEGORÍA SELECCIONADA ---
-        const categorySelect = document.getElementById('category-select');
-        
-        // Obtenemos el valor del desplegable. Si está vacío, ponemos 'fiction' por defecto.
-        // Esto coge el "value" del option (ej: 'science_fiction', 'horror', etc.)
-        const currentCategory = categorySelect && categorySelect.value ? categorySelect.value : 'fiction';
+        const cover = getBestCover(rawBook);
 
         const bookForCart = {
             title: rawBook.title,
             author: author,
             cover: cover,
+            isbn: rawBook.isbn,
+            price: 9.95, 
             
-            // --- 2. DATOS CRÍTICOS AÑADIDOS ---
-            
-            // A. Para guardar la foto correctamente (solución anterior)
-            // OpenLibrary a veces lo llama cover_i y a veces cover_id
-            cover_id: rawBook.cover_i || rawBook.cover_id || null, 
-            
-            // B. ISBN (Opcional pero recomendado)
-            isbn: rawBook.isbn ? (Array.isArray(rawBook.isbn) ? rawBook.isbn[0] : rawBook.isbn) : 'N/A',
-            
-            // C. La categoría seleccionada para guardar en base de datos
-            category_name: currentCategory 
+            // AHORA SÍ GUARDAMOS LA CATEGORÍA CORRECTA
+            suggested_category: category 
         };
-        
+
         addToCart(bookForCart);
     }
 
@@ -394,9 +396,10 @@
         const book = currentBooks[index];
         const cover = getBestCover(book);
         const author = getBestAuthor(book);
+        // También mostramos la categoría en el modal si quieres
+        // const category = getBestCategory(book); 
 
         const imgEl = document.getElementById('modal-img');
-        // Importante: Setear el src aquí fuerza la recarga de la imagen correcta
         imgEl.src = cover;
         imgEl.alt = "Portada de " + book.title;
 
@@ -455,7 +458,7 @@
                      onerror="this.src='https://placehold.co/150x220/1a1a1e/FFFFFF?text=Err'">
                 <div class="flex-1 min-w-0">
                     <p class="text-[10px] font-bold truncate text-white">${book.title}</p>
-                    <p class="text-[9px] text-gray-400">9.95€</p>
+                    <p class="text-[9px] text-gray-400">9.95€ - ${book.suggested_category}</p>
                 </div>
                 <button onclick="removeFromCart(${index})" class="text-red-400 hover:text-white px-2" aria-label="Eliminar ${book.title} del carrito"><i class="fas fa-times"></i></button>
             </div>
@@ -471,6 +474,7 @@
 
     window.checkoutAll = function() {
         if(cart.length === 0) { alert("El carrito está vacío"); return; }
+        // Guardamos el carrito tal cual, que ahora SÍ tiene la categoría
         localStorage.setItem('carritoParaPagar', JSON.stringify(cart));
         window.location.href = 'shop.html';
     };
@@ -516,6 +520,6 @@
         loadUserProfile();
         searchByCategory();
     };
-    </script>
+</script>
 </body>
 </html>
