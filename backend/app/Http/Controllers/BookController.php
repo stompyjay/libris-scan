@@ -4,33 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use App\Models\Category;
-use App\Models\Author; // <--- IMPORTANTE: No olvides importar esto
+use App\Models\Author;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 class BookController extends Controller
 {
-    /**
-     * API: BÚSQUEDA INTELIGENTE (OpenLibrary)
-     * (Sin cambios, solo devuelve datos planos para el frontend)
-     */
+    // --- SCAN (API OPENLIBRARY) ---
     public function scan(Request $request)
     {
         $query = $request->query('query');
-
-        if (!$query) {
-            return response()->json([]);
-        }
+        if (!$query) return response()->json([]);
 
         $url = "https://openlibrary.org/search.json?q=" . urlencode($query) . "&limit=12";
 
         try {
             $response = Http::get($url);
-            
-            if ($response->failed()) {
-                return response()->json(['error' => 'No se pudo conectar con OpenLibrary'], 500);
-            }
+            if ($response->failed()) return response()->json(['error' => 'No se pudo conectar'], 500);
 
             $data = $response->json();
             $books = [];
@@ -39,7 +30,6 @@ class BookController extends Controller
                 foreach ($data['docs'] as $item) {
                     $books[] = [
                         'title' => $item['title'] ?? 'Sin título',
-                        // Aquí enviamos el autor como string, luego en purchase lo convertiremos a ID
                         'author' => isset($item['author_name']) ? implode(', ', $item['author_name']) : 'Desconocido',
                         'year' => $item['first_publish_year'] ?? null,
                         'isbn' => isset($item['isbn']) ? $item['isbn'][0] : null,
@@ -48,87 +38,67 @@ class BookController extends Controller
                     ];
                 }
             }
-
             return response()->json($books);
-
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error del servidor: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Error: ' . $e->getMessage()], 500);
         }
     }
 
-    /**
-     * API: LISTAR MIS LIBROS
-     */
+    // --- MY BOOKS (LISTAR) ---
     public function myBooks(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user(); // SOLO el usuario autenticado
 
         if (!$user) {
-            $user = User::first();
-        }
-
-        if (!$user) {
-            return response()->json([]); 
+            return response()->json(['error' => 'Usuario no autenticado'], 401);
         }
 
         try {
             $books = $user->books()
-                          ->with('category')
-                          ->with('authors') // <--- NUEVO: Cargar la relación de autores
+                          ->with(['category', 'authors']) // Cargar relaciones
                           ->withPivot('status')
                           ->orderBy('book_user.created_at', 'desc')
                           ->get();
 
             $books->transform(function ($book) {
-                $book->status = $book->pivot->status; 
+                $book->status = $book->pivot->status;
                 return $book;
             });
 
             return response()->json($books);
-
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    /**
-     * API: PROCESAR COMPRA (Carrito / Varios libros)
-     */
+    // --- PURCHASE (COMPRAR) ---
     public function purchase(Request $request)
     {
-        $request->validate([
-            'books' => 'required|array',
-        ]);
+        $request->validate(['books' => 'required|array']);
         
-        $user = $request->user();
-        if (!$user) $user = User::first();
+        $user = $request->user(); // SOLO usuario autenticado
+
+        if (!$user) {
+            return response()->json(['message' => 'Debes iniciar sesión para comprar'], 401);
+        }
 
         $purchasedBooks = [];
 
         foreach ($request->books as $item) {
-            // 1. Datos básicos
             $titulo = !empty($item['title']) ? $item['title'] : 'Libro sin título';
-            // Recibimos el nombre del autor (string)
             $authorName = !empty($item['author']) ? $item['author'] : 'Desconocido';
             
-            // 2. Gestionar CATEGORÍA
+            // Categoría
             $catName = $item['suggested_category'] ?? 'General';
             $category = Category::firstOrCreate(['name' => ucfirst($catName)]);
 
-            // 3. Gestionar AUTOR (NUEVO LÓGICA)
-            // Busca si existe un autor con ese nombre, si no, lo crea en la tabla 'authors'
-            $authorModel = Author::firstOrCreate([
-                'name' => $authorName
-            ]);
+            // Autor
+            $authorModel = Author::firstOrCreate(['name' => $authorName]);
 
-            // 4. Buscar o Crear el LIBRO
+            // Libro
             $book = Book::updateOrCreate(
+                ['title' => $titulo],
                 [
-                    'title' => $titulo 
-                ],
-                [
-                    // Guardamos el string también por si acaso (backup), 
-                    // pero la relación importante es la de abajo.
                     'author'      => $authorName, 
                     'isbn'        => $item['isbn'] ?? null,
                     'cover'       => $item['cover'] ?? 'https://via.placeholder.com/150',
@@ -138,17 +108,10 @@ class BookController extends Controller
                 ]
             );
 
-            // 5. VINCULAR LIBRO CON AUTOR (NUEVO)
-            // Llenamos la tabla 'author_book'
-            // syncWithoutDetaching evita borrar otros autores si el libro ya existía y tenía varios
+            // Relaciones
             $book->authors()->syncWithoutDetaching([$authorModel->id]);
+            $user->books()->syncWithoutDetaching([$book->id => ['status' => 'pending']]);
 
-            // 6. VINCULAR LIBRO CON USUARIO (Compra)
-            $user->books()->syncWithoutDetaching([
-                $book->id => ['status' => 'pending']
-            ]);
-
-            // Cargar la relación para devolver el objeto completo
             $book->load('authors');
             $purchasedBooks[] = $book;
         }
@@ -159,33 +122,27 @@ class BookController extends Controller
         ], 200);
     }
 
-    /**
-     * API: GUARDAR UN SOLO LIBRO (Manual)
-     */
+    // --- STORE (GUARDAR MANUAL) ---
     public function store(Request $request)
     {
-        $request->validate([
-            'title' => 'required|string',
-        ]);
+        $request->validate(['title' => 'required|string']);
 
-        $user = $request->user() ?? User::first();
+        $user = $request->user(); // <--- CORREGIDO: Eliminado "?? User::first()"
+        
+        if (!$user) {
+            return response()->json(['message' => 'No autorizado'], 401);
+        }
 
-        // 1. Gestionar Categoría
         $categoryName = $request->suggested_category ?? 'General';
         $category = Category::firstOrCreate(['name' => ucfirst($categoryName)]);
 
-        // 2. Gestionar Autor (NUEVO)
         $authorName = $request->author ?? 'Desconocido';
         $authorModel = Author::firstOrCreate(['name' => $authorName]);
 
-        // 3. Crear el libro
-        // Nota: Quitamos user_id del create del libro porque la relación es N:M en book_user
         $book = Book::firstOrCreate(
+            ['title' => $request->title], 
             [
-                'title' => $request->title,
-            ], 
-            [
-                'author' => $authorName, // String backup
+                'author' => $authorName,
                 'isbn' => $request->isbn,
                 'cover' => $request->cover ?? 'https://via.placeholder.com/150',
                 'category_id' => $category->id,
@@ -194,10 +151,8 @@ class BookController extends Controller
             ]
         );
 
-        // 4. Vincular Autor (Tabla author_book)
         $book->authors()->syncWithoutDetaching([$authorModel->id]);
 
-        // 5. Vincular al usuario (Tabla book_user)
         if (!$user->books()->where('book_id', $book->id)->exists()) {
             $user->books()->attach($book->id, ['status' => 'pending']);
             $message = 'Libro añadido a tu biblioteca';
@@ -205,40 +160,47 @@ class BookController extends Controller
             return response()->json(['message' => 'Ya tienes este libro'], 409);
         }
 
-        // Devolvemos el libro con su autor cargado
         $book->load('authors');
-
         return response()->json(['message' => $message, 'book' => $book], 201);
     }
 
-    // ... Destroy, Show y UpdateStatus
-    
+    // --- DESTROY (ELIMINAR) ---
     public function destroy(Request $request, $id)
     {
-        $user = $request->user() ?? User::first();
+        $user = $request->user(); // <--- CORREGIDO
+        if (!$user) return response()->json(['error' => 'No autorizado'], 401);
+
         $detached = $user->books()->detach($id);
+        
         if ($detached) return response()->json(['message' => 'Libro eliminado']);
         return response()->json(['error' => 'No encontrado'], 404);
     }
     
+    // --- SHOW (VER UNO) ---
     public function show(Request $request, $id)
     {
-        $user = $request->user() ?? User::first();
-        // Cargamos también 'authors' aquí
+        $user = $request->user(); // <--- CORREGIDO
+        if (!$user) return response()->json(['error' => 'No autorizado'], 401);
+
         $book = $user->books()
                      ->with(['category', 'authors']) 
                      ->withPivot('status')
                      ->find($id);
 
         if (!$book) return response()->json(['error' => 'No encontrado'], 404);
+        
         $book->status = $book->pivot->status;
         return response()->json($book);
     }
 
+    // --- UPDATE STATUS ---
     public function updateStatus(Request $request, $id)
     {
         $request->validate(['status' => 'required']);
-        $user = $request->user() ?? User::first();
+        
+        $user = $request->user(); // <--- CORREGIDO
+        if (!$user) return response()->json(['error' => 'No autorizado'], 401);
+
         $user->books()->updateExistingPivot($id, ['status' => $request->status]);
         return response()->json(['message' => 'Estado actualizado']);
     }

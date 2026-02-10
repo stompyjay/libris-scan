@@ -195,6 +195,20 @@
         document.getElementById('flipbook-container').innerHTML = '';
     }
 
+    function getCookie(name) {
+        let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? decodeURIComponent(match[2]) : null;
+    }
+    function updateCounters() {
+        // Contamos cuántos elementos (hijos) tienen las listas
+        const pendingCount = document.getElementById('pending-list').children.length;
+        const completedCount = document.getElementById('completed-list').children.length;
+        
+        // Actualizamos los números en el HTML
+        document.getElementById('count-pending').innerText = pendingCount;
+        document.getElementById('count-completed').innerText = completedCount;
+    }
+
     // --- 3. CARGAR LIBROS ---
     document.addEventListener('DOMContentLoaded', loadBooks);
 
@@ -203,21 +217,52 @@
         const completedContainer = document.getElementById('completed-list');
         
         try {
-            const response = await fetch('/api/my-books', { headers: { 'Accept': 'application/json' } });
-            if(response.status === 401) return;
+            const token = getCookie('XSRF-TOKEN');
+
+            // OJO: Si seguiste mis pasos anteriores, recuerda que la ruta debería ser '/my-books'
+            // Si la tienes en '/api/my-books', es normal que te de 401 porque la API no lee cookies.
+            const response = await fetch('/my-books', {  // <--- HE QUITADO EL '/api' POR SI ACASO
+                method: 'GET',
+                headers: { 
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest', // Importante para Laravel
+                    'X-XSRF-TOKEN': token
+                } 
+            });
+
+            // --- HE COMENTADO ESTO PARA QUE NO TE ECHE ---
+            /*
+            if(response.status === 401) {
+                console.error("Usuario no autenticado. Redirigiendo...");
+                alert("Tu sesión ha caducado. Por favor, inicia sesión de nuevo.");
+                window.location.href = 'login.html'; 
+                return;
+            }
+            */
+
+            // AHORA VERÁS EL ERROR REAL EN LA CONSOLA (F12)
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("ERROR DETALLADO:", response.status, errorText);
+                throw new Error(`Error del servidor: ${response.status}`);
+            }
+
             const books = await response.json();
+            
+            // ... (El resto del código de renderizado sigue igual) ...
             
             pendingContainer.innerHTML = '';
             completedContainer.innerHTML = '';
 
             if (books.length === 0) {
                 pendingContainer.innerHTML = '<p class="text-center text-gray-600 mt-10">No hay libros.</p>';
+                updateCounters(); 
                 return;
             }
 
+            // Renderizar cada libro (TU LÓGICA DE SIEMPRE)
             books.forEach(book => {
-                // PDF DE PRUEBA (Para que veas el efecto YA, aunque no tengas PDFs subidos)
-                // Cambia esto por book.pdf_url cuando tengas la columna en tu BD
                 const pdfLink = book.pdf_url || "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf";
                 
                 let coverSrc = book.cover || `https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`;
@@ -255,18 +300,18 @@
                     </div>
                 `;
 
-                if (book.status === 'completed') completedContainer.innerHTML += cardHTML;
-                else pendingContainer.innerHTML += cardHTML;
+                if (book.status === 'completed') {
+                    completedContainer.innerHTML += cardHTML;
+                } else {
+                    pendingContainer.innerHTML += cardHTML;
+                }
             });
 
             updateCounters();
 
-        } catch (error) { console.error("Error cargando libros", error); }
-    }
-
-    function updateCounters() {
-        document.getElementById('count-pending').innerText = document.getElementById('pending-list').children.length;
-        document.getElementById('count-completed').innerText = document.getElementById('completed-list').children.length;
+        } catch (error) { 
+            console.error("Error cargando libros", error); 
+        }
     }
 </script>
 </body>

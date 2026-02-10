@@ -140,7 +140,22 @@
                     </div>
                 </div>
             </header>
-
+            <div id="admin-toolbar" class="hidden mb-8 animate-[fadeIn_0.5s]">
+                <div class="bg-blue-900/20 border border-blue-500/30 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 backdrop-blur-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-blue-600 text-white text-xs font-black px-2 py-1 rounded shadow shadow-blue-500/50">ADMIN</div>
+                        <p class="text-sm text-blue-200 font-medium">Modo Gestión</p>
+                    </div>
+                    <div class="flex gap-3 w-full md:w-auto">
+                        <button onclick="loadLocalCatalog()" class="flex-1 md:flex-none bg-[#1a1a1e] hover:bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
+                            <i class="fas fa-database text-yellow-500"></i> Mi Inventario
+                        </button>
+                        <button onclick="openAdminModal()" class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-600/20 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-plus"></i> Crear Libro
+                        </button>
+                    </div>
+                </div>
+            </div>
             <h2 id="results-title" class="text-xl font-bold mb-6 flex items-center gap-2">
                 <i class="fas fa-sparkles text-yellow-500" aria-hidden="true"></i> Libros Destacados
             </h2>
@@ -197,139 +212,141 @@
             </div>
         </div>
     </div>
-
+    <div id="admin-modal" class="fixed inset-0 z-[80] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#1a1a1e] w-full max-w-lg rounded-3xl border border-gray-700 shadow-2xl p-8 relative animate-[fadeIn_0.3s]">
+        <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        <h2 id="admin-modal-title" class="text-2xl font-black text-white mb-6">Nuevo Libro</h2>
+        <form id="admin-form" onsubmit="handleSaveBook(event)" class="space-y-4">
+            <input type="hidden" id="edit-book-id">
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Título</label>
+                <input type="text" id="edit-title" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase ml-1">Autor</label>
+                    <input type="text" id="edit-author" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase ml-1">Precio (€)</label>
+                    <input type="number" step="0.01" id="edit-price" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Categoría</label>
+                <select id="edit-category" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
+                    <option value="1">Ficción</option>
+                    <option value="2">No Ficción</option>
+                    <option value="3">Terror</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase ml-1">URL Portada</label>
+                <input type="url" id="edit-cover" placeholder="https://..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 mt-4 transition">
+                Guardar Libro
+            </button>
+        </form>
+    </div>
+</div>
     <script>
     const API_BASE_URL = '/api'; 
 
     let currentBooks = [];
     let cart = [];
-    let myBooks = JSON.parse(localStorage.getItem('myBooks')) || [];
+    let isAdmin = false; // NUEVO: Estado de admin
 
-    // 1. CARGAR PERFIL
+    // 1. CARGAR PERFIL Y VERIFICAR ADMIN
     async function loadUserProfile() {
         try {
             const response = await fetch(`${API_BASE_URL}/user`, {
                 method: 'GET',
                 credentials: 'include', 
-                headers: { 
-                    'Accept': 'application/json', 
-                    'X-Requested-With': 'XMLHttpRequest' 
-                }
+                headers: { 'Accept': 'application/json' }
             });
-
-            if (!response.ok) {
-                console.log("Estado de la respuesta:", response.status);
-            }
 
             if (response.status === 401) { 
                 window.location.href = '/'; 
-                console.log("Sesión expirada. Redirigiendo al login.");
                 return; 
             }
 
             if (response.ok) {
                 const userData = await response.json();
+                
+                console.log("MIS DATOS DE USUARIO:", userData);
+                // Actualizar nombres en pantalla
                 const headerName = document.getElementById('header-name');
                 const sidebarName = document.getElementById('sidebar-name');
-
                 if(headerName) headerName.innerText = userData.name;
                 if(sidebarName) sidebarName.innerText = userData.name;
+
+                // --- DETECTAR ADMIN ---
+                if (userData.admin === 1 || userData.role === 'admin' || userData.is_admin === 1) {
+                    isAdmin = true;
+                    document.getElementById('admin-toolbar').classList.remove('hidden');
+                }
             }
         } catch (error) { 
             console.error("Error cargando perfil:", error); 
         }
     }
 
-    async function logout() {
-        if(!confirm("¿Cerrar sesión?")) return;
-
-        try { 
-            // 1. Obtener el token XSRF
-            const token = document.cookie
-                .split('; ')
-                .find(row => row.startsWith('XSRF-TOKEN='))
-                ?.split('=')[1];
-
-            await fetch('/logout', { 
-                method: 'POST', 
-                credentials: 'include',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': decodeURIComponent(token)
-                } 
-            }); 
-
-            // 2. Limpiar datos del Frontend
-            localStorage.removeItem('myBooks');
-            localStorage.removeItem('carritoParaPagar');
-
-        } catch (e) { 
-            console.error("Error al intentar cerrar sesión:", e); 
-        } finally { 
-            // 3. Redirigir siempre
-            window.location.href = '/'; 
-        }
-    }
-
-    // --- FUNCIÓN AUXILIAR PARA OBTENER LA MEJOR IMAGEN ---
-    function getBestCover(book) {
-        if (book.cover_id) return `https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`;
-        if (book.cover_i) return `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`;
-        if (book.cover_url && book.cover_url.startsWith('http')) return book.cover_url;
-        if (book.isbn) {
-            const isbnVal = Array.isArray(book.isbn) ? book.isbn[0] : book.isbn;
-            return `https://covers.openlibrary.org/b/isbn/${isbnVal}-M.jpg`;
-        }
-        return `https://placehold.co/150x220/1a1a1e/FFFFFF?text=Sin+Portada`;
-    }
-
-    function getBestAuthor(book) {
-        if (book.author) return book.author;
-        if (Array.isArray(book.author_name)) return book.author_name[0];
-        if (Array.isArray(book.authors)) return book.authors[0].name;
-        return 'Autor desconocido';
-    }
-
-    function getBestCategory(book) {
-        // La API de búsqueda devuelve 'subject' (array de strings)
-        if (book.subject && Array.isArray(book.subject) && book.subject.length > 0) {
-            return book.subject[0]; // Devolvemos solo la primera categoría
-        }
-        return 'General';
-    }
-
-    // 2. RENDERIZADO
-    function renderBooks(books) {
+    // 2. RENDERIZADO (MODIFICADO PARA ADMIN)
+    function renderBooks(books, source = 'api') {
         currentBooks = books; 
         const grid = document.getElementById('api-results-grid');
+        const titleHeader = document.getElementById('results-title');
+
+        // Cambiar título según lo que estemos viendo
+        if (source === 'local') {
+            titleHeader.innerHTML = '<i class="fas fa-database text-blue-500"></i> Mi Inventario (Base de Datos)';
+        } else {
+            titleHeader.innerHTML = '<i class="fas fa-sparkles text-yellow-500"></i> Libros Destacados (OpenLibrary)';
+        }
         
         if (!books || books.length === 0) {
-            grid.innerHTML = '<p class="text-gray-500 col-span-full text-center py-10">No se encontraron libros.</p>';
+            grid.innerHTML = '<p class="text-gray-500 col-span-full text-center py-10">No hay libros para mostrar.</p>';
             return;
         }
 
         grid.innerHTML = books.map((book, index) => {
-            const cover = getBestCover(book);
-            const author = getBestAuthor(book);
-            const category = getBestCategory(book); 
+            const isLocal = source === 'local';
+            
+            // Datos dinámicos según origen (API externa vs Tu Base de Datos)
+            const cover = isLocal ? (book.cover || 'https://placehold.co/150x220?text=Sin+Img') : getBestCover(book);
+            const author = isLocal ? (book.author || 'Desconocido') : getBestAuthor(book);
+            const category = isLocal ? 'Inventario' : getBestCategory(book);
+            const price = isLocal ? book.price + '€' : '9.95€';
             const titleSafe = (book.title || "Sin Título").replace(/"/g, '&quot;'); 
 
+            // Botones de Admin (Solo si es local y eres admin)
+            let adminBtns = '';
+            if (isLocal && isAdmin) {
+                adminBtns = `
+                <div class="absolute top-2 left-2 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition duration-300">
+                    <button onclick="event.stopPropagation(); openAdminModal(${index})" class="bg-yellow-500 text-black w-8 h-8 rounded-full flex items-center justify-center hover:scale-110 shadow-lg" title="Editar">
+                        <i class="fas fa-pencil-alt text-xs"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); deleteBook(${book.id})" class="bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center hover:scale-110 shadow-lg" title="Borrar">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </div>`;
+            }
+
             return `
-                <button 
-                    class="book-card cursor-pointer group animate-[fadeIn_0.3s] relative bg-[#1a1a1e] flex flex-col h-full"
+                <div class="book-card cursor-pointer group animate-[fadeIn_0.3s] relative bg-[#1a1a1e] flex flex-col h-full"
                     onclick="openProductModal(${index})" 
                     draggable="true"
-                    ondragstart="empezarArrastre(event, ${index})"
-                    aria-label="Ver detalles de ${titleSafe}"
-                >
+                    ondragstart="empezarArrastre(event, ${index})">
+                    
+                    ${adminBtns}
+
                     <div class="overflow-hidden h-56 relative bg-gray-800 w-full">
-                        <img src="${cover}" 
-                             alt="Portada de ${titleSafe}" 
-                             loading="lazy"
-                             onerror="this.onerror=null; this.src='https://placehold.co/150x220/1a1a1e/FFFFFF?text=No+Disponible';"
+                        <img src="${cover}" alt="${titleSafe}" loading="lazy"
                              class="w-full h-full object-cover group-hover:scale-110 transition duration-500 pointer-events-none">
-                        
                         <span class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg border border-white/10 shadow-lg">
                             ${category}
                         </span>
@@ -337,14 +354,131 @@
 
                     <div class="p-4 flex flex-col flex-1 w-full">
                         <h4 class="font-bold text-xs truncate text-white text-left mb-1">${book.title}</h4>
-                        <p class="text-[10px] text-gray-400 truncate text-left">${author}</p>
+                        <p class="text-[10px] text-gray-400 truncate text-left mb-2">${author}</p>
+                        <div class="mt-auto pt-2 border-t border-gray-800 flex justify-between items-center">
+                            <span class="text-green-400 font-bold text-sm">${price}</span>
+                            <i class="fas fa-cart-plus text-gray-500 text-xs"></i>
+                        </div>
                     </div>
-                </button>
+                </div>
             `;
         }).join('');
     }
 
-    // 3. ARRASTRAR Y SOLTAR
+    // --- FUNCIONES DE ADMINISTRACIÓN ---
+
+    async function loadLocalCatalog() {
+        toggleLoader(true);
+        try {
+            const res = await fetch('/api/books'); // Asegúrate que esta ruta existe en Laravel
+            if (!res.ok) throw new Error("Error cargando inventario");
+            const books = await res.json();
+            renderBooks(books, 'local');
+        } catch (e) {
+            console.error(e);
+            alert("No se pudo cargar tu inventario.");
+        } finally {
+            toggleLoader(false);
+        }
+    }
+
+    function openAdminModal(index = null) {
+        const modal = document.getElementById('admin-modal');
+        const form = document.getElementById('admin-form');
+        
+        if (index !== null) { // Editar
+            const book = currentBooks[index];
+            document.getElementById('admin-modal-title').innerText = "Editar Libro";
+            document.getElementById('edit-book-id').value = book.id;
+            document.getElementById('edit-title').value = book.title;
+            document.getElementById('edit-author').value = book.author;
+            document.getElementById('edit-price').value = book.price;
+            document.getElementById('edit-cover').value = book.cover;
+            // document.getElementById('edit-category').value = book.category_id;
+        } else { // Crear
+            document.getElementById('admin-modal-title').innerText = "Nuevo Libro";
+            form.reset();
+            document.getElementById('edit-book-id').value = "";
+        }
+        modal.classList.remove('hidden');
+    }
+
+    async function handleSaveBook(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-book-id').value;
+        const isEdit = id ? true : false;
+        
+        const data = {
+            title: document.getElementById('edit-title').value,
+            author: document.getElementById('edit-author').value,
+            price: document.getElementById('edit-price').value,
+            cover: document.getElementById('edit-cover').value,
+            category_id: document.getElementById('edit-category').value
+        };
+
+        const url = isEdit ? `/api/books/${id}` : '/api/books';
+        const method = isEdit ? 'PUT' : 'POST';
+        const xsrfToken = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-XSRF-TOKEN': decodeURIComponent(xsrfToken)
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                document.getElementById('admin-modal').classList.add('hidden');
+                loadLocalCatalog(); // Recargar la lista
+                alert("Guardado correctamente");
+            } else {
+                alert("Error al guardar");
+            }
+        } catch (error) { console.error(error); }
+    }
+
+    async function deleteBook(id) {
+        if(!confirm("¿Borrar libro permanentemente?")) return;
+        const xsrfToken = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
+        try {
+            const res = await fetch(`/api/books/${id}`, {
+                method: 'DELETE',
+                headers: { 
+                    'X-XSRF-TOKEN': decodeURIComponent(xsrfToken),
+                    'Accept': 'application/json' 
+                }
+            });
+            if (res.ok) loadLocalCatalog();
+        } catch (e) { console.error(e); }
+    }
+
+    // --- FUNCIONES ORIGINALES (AUXILIARES) ---
+
+    function getBestCover(book) {
+        if (book.cover_id) return `https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`;
+        if (book.cover_i) return `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`;
+        if (book.cover_url && book.cover_url.startsWith('http')) return book.cover_url;
+        if (book.isbn) return `https://covers.openlibrary.org/b/isbn/${Array.isArray(book.isbn)?book.isbn[0]:book.isbn}-M.jpg`;
+        return `https://placehold.co/150x220/1a1a1e/FFFFFF?text=Sin+Portada`;
+    }
+
+    function getBestAuthor(book) {
+        if (book.author) return book.author;
+        if (Array.isArray(book.author_name)) return book.author_name[0];
+        return 'Autor desconocido';
+    }
+
+    function getBestCategory(book) {
+        if (book.subject && Array.isArray(book.subject) && book.subject.length > 0) return book.subject[0];
+        return 'General';
+    }
+
+    // --- LOGICA DE CARRITO Y ARRASTRE ---
+
     function empezarArrastre(event, index) {
         event.dataTransfer.setData('text/plain', index);
         event.dataTransfer.effectAllowed = "copy";
@@ -370,65 +504,21 @@
         });
     }
 
-    // --- AQUÍ ESTABA EL ERROR Y ESTA ES LA CORRECCIÓN ---
     function prepararYAgregar(rawBook) {
-        // Usamos la función auxiliar porque rawBook.suggested_category NO existe en la API
-        const category = getBestCategory(rawBook);
-        const author = getBestAuthor(rawBook);
-        const cover = getBestCover(rawBook);
-
+        // Detectar si es libro local o de API para añadir al carrito
+        const isLocal = rawBook.id && rawBook.created_at; // forma simple de detectar modelo local
+        
         const bookForCart = {
             title: rawBook.title,
-            author: author,
-            cover: cover,
-            isbn: rawBook.isbn,
-            price: 9.95, 
-            
-            // AHORA SÍ GUARDAMOS LA CATEGORÍA CORRECTA
-            suggested_category: category 
+            author: isLocal ? rawBook.author : getBestAuthor(rawBook),
+            cover: isLocal ? rawBook.cover : getBestCover(rawBook),
+            price: isLocal ? rawBook.price : 9.95
         };
-
         addToCart(bookForCart);
     }
 
-    // 4. MODAL Y API
-    function openProductModal(index) {
-        const book = currentBooks[index];
-        const cover = getBestCover(book);
-        const author = getBestAuthor(book);
-        // También mostramos la categoría en el modal si quieres
-        // const category = getBestCategory(book); 
-
-        const imgEl = document.getElementById('modal-img');
-        imgEl.src = cover;
-        imgEl.alt = "Portada de " + book.title;
-
-        document.getElementById('modal-title').innerText = book.title;
-        document.getElementById('modal-author').innerText = author;
-        
-        const btn = document.getElementById('buy-btn');
-        btn.innerText = "Añadir al Carrito";
-        
-        btn.onclick = () => {
-            prepararYAgregar(book);
-            closeModal('product-modal');
-        };
-        
-        const modal = document.getElementById('product-modal');
-        modal.classList.remove('hidden');
-        setTimeout(() => modal.querySelector('button').focus(), 100);
-    }
-
-    function closeModal(id) { 
-        document.getElementById(id).classList.add('hidden'); 
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === "Escape") closeModal('product-modal');
-    });
-
-    // 5. CARRITO
     function addToCart(book) {
+        // Evitar duplicados exactos
         if(cart.find(b => b.title === book.title)) return;
         cart.push(book);
         renderCart();
@@ -453,18 +543,17 @@
 
         cartList.innerHTML = cart.map((book, index) => `
             <div class="flex items-center gap-2 bg-black/40 p-2 rounded border border-gray-700 animate-[fadeIn_0.3s]">
-                <img src="${book.cover}" alt="" 
-                     class="w-8 h-12 object-cover rounded"
-                     onerror="this.src='https://placehold.co/150x220/1a1a1e/FFFFFF?text=Err'">
+                <img src="${book.cover}" class="w-8 h-12 object-cover rounded">
                 <div class="flex-1 min-w-0">
                     <p class="text-[10px] font-bold truncate text-white">${book.title}</p>
-                    <p class="text-[9px] text-gray-400">9.95€ - ${book.suggested_category}</p>
+                    <p class="text-[9px] text-gray-400">${book.price}€</p>
                 </div>
-                <button onclick="removeFromCart(${index})" class="text-red-400 hover:text-white px-2" aria-label="Eliminar ${book.title} del carrito"><i class="fas fa-times"></i></button>
+                <button onclick="removeFromCart(${index})" class="text-red-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
             </div>
         `).join('');
 
-        document.getElementById('cart-total').innerText = (cart.length * 9.95).toFixed(2) + '€';
+        const total = cart.reduce((sum, item) => sum + Number(item.price), 0);
+        document.getElementById('cart-total').innerText = total.toFixed(2) + '€';
     }
 
     window.removeFromCart = function(index) {
@@ -474,12 +563,41 @@
 
     window.checkoutAll = function() {
         if(cart.length === 0) { alert("El carrito está vacío"); return; }
-        // Guardamos el carrito tal cual, que ahora SÍ tiene la categoría
         localStorage.setItem('carritoParaPagar', JSON.stringify(cart));
-        window.location.href = 'shop.html';
+        window.location.href = 'shop.html'; // Asegúrate de tener esta página o redirigir a donde quieras
     };
 
-    // 6. BUSQUEDA API
+    // --- MODALES Y SEARCH ---
+
+    function openProductModal(index) {
+        const book = currentBooks[index];
+        const isLocal = book.created_at ? true : false;
+
+        const cover = isLocal ? book.cover : getBestCover(book);
+        const author = isLocal ? book.author : getBestAuthor(book);
+        const price = isLocal ? book.price : 9.95;
+
+        const imgEl = document.getElementById('modal-img');
+        imgEl.src = cover;
+        
+        document.getElementById('modal-title').innerText = book.title;
+        document.getElementById('modal-author').innerText = author;
+        
+        const btn = document.getElementById('buy-btn');
+        // Actualizar precio en el modal visualmente si quieres, o dejarlo fijo
+        // Aquí simplificamos al botón:
+        btn.onclick = () => {
+            prepararYAgregar(book);
+            closeModal('product-modal');
+        };
+        
+        document.getElementById('product-modal').classList.remove('hidden');
+    }
+
+    function closeModal(id) { 
+        document.getElementById(id).classList.add('hidden'); 
+    }
+
     async function searchBooks() {
         const query = document.getElementById('api-search').value;
         if(!query) return;
@@ -487,13 +605,9 @@
         try {
             const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=12`);
             const data = await res.json();
-            renderBooks(data.docs);
-        } catch (e) {
-            console.error(e);
-            alert("Error al buscar libros");
-        } finally {
-            toggleLoader(false);
-        }
+            renderBooks(data.docs, 'api');
+        } catch (e) { console.error(e); } 
+        finally { toggleLoader(false); }
     }
 
     async function searchByCategory() {
@@ -503,12 +617,9 @@
         try {
             const res = await fetch(`https://openlibrary.org/subjects/${cat}.json?limit=12`);
             const data = await res.json();
-            renderBooks(data.works);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            toggleLoader(false);
-        }
+            renderBooks(data.works, 'api');
+        } catch (e) { console.error(e); } 
+        finally { toggleLoader(false); }
     }
     
     function toggleLoader(show) { 
@@ -516,10 +627,28 @@
         document.getElementById('btn-text').style.display = show ? 'none' : 'block';
     }
 
+    async function logout() {
+        if(!confirm("¿Cerrar sesión?")) return;
+        try { 
+            const token = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
+            await fetch('/logout', { 
+                method: 'POST', 
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-XSRF-TOKEN': decodeURIComponent(token) 
+                } 
+            }); 
+            localStorage.removeItem('myBooks');
+        } catch (e) { console.error(e); } 
+        finally { window.location.href = '/'; }
+    }
+
     window.onload = () => {
         loadUserProfile();
         searchByCategory();
     };
-</script>
+    </script>
 </body>
 </html>

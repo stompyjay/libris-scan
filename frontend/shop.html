@@ -92,118 +92,132 @@
     </main>
 
     <script>
-        // --- 1. CONFIGURACIÓN Y RENDERIZADO ---
-        let cart = JSON.parse(localStorage.getItem('carritoParaPagar')) || [];
-
+    // --- 1. CARGAR DATOS AL INICIAR ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const cart = JSON.parse(localStorage.getItem('carritoParaPagar')) || [];
+        
         // Redirigir si está vacío
         if (cart.length === 0) {
             alert("No tienes productos en el carrito.");
             window.location.href = 'dashboard.html';
+            return;
         }
 
         const container = document.getElementById('checkout-items');
         let total = 0;
 
-        // Renderizar items con jerarquía de encabezados corregida (h3)
+        // Renderizar items
         container.innerHTML = cart.map(item => {
-            const price = 9.95; 
+            const price = parseFloat(item.price) || 9.95; 
             total += price;
+            
+            // Imagen por defecto si falla
+            const cover = item.cover || 'https://via.placeholder.com/150';
+            
             return `
-                <div class="flex gap-4 bg-[#121214] p-3 rounded-lg border border-gray-800 items-center" role="listitem">
-                    <img src="${item.cover}" alt="" class="w-12 h-16 object-cover rounded shadow-sm flex-shrink-0">
+                <div class="flex gap-4 bg-[#121214] p-3 rounded-lg border border-gray-800 items-center">
+                    <img src="${cover}" alt="" class="w-12 h-16 object-cover rounded shadow-sm flex-shrink-0">
                     <div class="flex-1 min-w-0">
                         <h3 class="font-bold text-sm text-gray-200 line-clamp-1">${item.title}</h3>
-                        <p class="text-xs text-gray-400 truncate">${item.author}</p>
-                        <p class="text-sm font-bold text-blue-400 mt-1">${price}€</p>
+                        <p class="text-xs text-gray-400 truncate">${item.author || 'Desconocido'}</p>
+                        <p class="text-sm font-bold text-blue-400 mt-1">${price.toFixed(2)}€</p>
                     </div>
                 </div>
             `;
         }).join('');
 
-        document.getElementById('subtotal-price').innerText = total.toFixed(2) + '€';
-        document.getElementById('total-price').innerText = total.toFixed(2) + '€';
-
-        // --- 2. NAVEGACIÓN POR TECLADO (ATAJOS) ---
-        document.addEventListener('keydown', (e) => {
-            // Tecla ESCAPE: Volver atrás
-            if (e.key === "Escape") {
-                window.location.href = 'dashboard.html';
-            }
-        });
-
-        // --- 3. LÓGICA DE COMPRA ---
-        function getCookie(name) {
-            let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-            return match ? decodeURIComponent(match[2]) : null;
-        }
-
-    async function confirmarCompra(e) {
-    e.preventDefault();
-    
-    const btn = document.getElementById('submit-btn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-    btn.disabled = true;
-
-    const token = getCookie('XSRF-TOKEN');
-    const carritoRaw = JSON.parse(localStorage.getItem('carritoParaPagar')) || [];
-
-    // --- DEPURACIÓN: MIRA ESTO EN LA CONSOLA (F12) ---
-    console.log("Datos crudos del carrito:", carritoRaw);
-
-    // Mapeamos asegurando que siempre haya valores (evita undefined)
-    const booksFormatted = carritoRaw.map(libro => {
-        // Intentamos encontrar el título en varios sitios posibles por si acaso
-        const tituloReal = libro.title || (libro.volumeInfo ? libro.volumeInfo.title : "Sin título");
-        const autorReal = libro.author || (libro.volumeInfo ? (libro.volumeInfo.authors ? libro.volumeInfo.authors[0] : "Desconocido") : "Desconocido");
+        // Actualizar totales en pantalla
+        const totalFormatted = total.toFixed(2) + '€';
+        document.getElementById('subtotal-price').innerText = totalFormatted;
+        document.getElementById('total-price').innerText = totalFormatted;
         
-        return {
-            title: tituloReal,
-            author: autorReal,
-            isbn: libro.isbn || 'N/A',
-            cover: libro.cover || 'https://via.placeholder.com/150',
-            price: libro.price || 9.95,
-            suggested_category: libro.suggested_category || 'General'
-        };
+        // Actualizar botón
+        const btn = document.getElementById('submit-btn');
+        if(btn) btn.innerText = `Pagar ${totalFormatted}`;
     });
 
-    // --- DEPURACIÓN: ESTO ES LO QUE SE ENVÍA REALMENTE ---
-    console.log("Enviando al servidor:", { books: booksFormatted });
+    // --- 2. NAVEGACIÓN (ESCAPE) ---
+    document.addEventListener('keydown', (e) => {
+        if (e.key === "Escape") window.location.href = 'dashboard.html';
+    });
 
-    try {
-        const response = await fetch('/api/purchase', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': token
-            },
-            body: JSON.stringify({ books: booksFormatted })
+    // --- 3. HELPER PARA COOKIES ---
+    function getCookie(name) {
+        let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? decodeURIComponent(match[2]) : null;
+    }
+
+    // --- 4. FUNCIÓN DE COMPRA ---
+    async function confirmarCompra(e) {
+        e.preventDefault();
+        
+        const btn = document.getElementById('submit-btn');
+        const originalText = btn.innerHTML;
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+        btn.disabled = true;
+
+        // Obtenemos el token XSRF que Laravel pone automáticamente en las cookies
+        const token = getCookie('XSRF-TOKEN');
+        const carritoRaw = JSON.parse(localStorage.getItem('carritoParaPagar')) || [];
+
+        // Preparar datos
+        const booksFormatted = carritoRaw.map(libro => {
+            const tituloReal = libro.title || (libro.volumeInfo ? libro.volumeInfo.title : "Sin título");
+            let autorReal = "Desconocido";
+            if(libro.author) autorReal = libro.author;
+            else if(libro.volumeInfo && libro.volumeInfo.authors) autorReal = libro.volumeInfo.authors[0];
+
+            return {
+                title: tituloReal,
+                author: autorReal,
+                isbn: libro.isbn || (libro.volumeInfo?.industryIdentifiers?.[0]?.identifier) || 'N/A',
+                cover: libro.cover || (libro.volumeInfo?.imageLinks?.thumbnail) || 'https://via.placeholder.com/150',
+                price: libro.price || 9.95,
+                suggested_category: libro.suggested_category || 'General'
+            };
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `Error: ${response.status}`);
+        try {
+            // --- CAMBIO CLAVE AQUÍ ---
+            // Usamos '/purchase' (Ruta Web) en lugar de '/api/purchase'
+            // Esto permite que Laravel detecte tu sesión de usuario logueado.
+            const response = await fetch('/purchase', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-XSRF-TOKEN': token // Enviamos el "carné de identidad"
+                },
+                body: JSON.stringify({ books: booksFormatted })
+            });
+
+            // CASO 1: NO AUTORIZADO
+            if (response.status === 401 || response.status === 419) {
+                alert("La sesión ha caducado o no estás logueado. Por favor, entra de nuevo.");
+                window.location.href = '/login'; 
+                return;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error: ${response.status}`);
+            }
+
+            // CASO 2: ÉXITO
+            localStorage.removeItem('carritoParaPagar');
+            localStorage.removeItem('myBooks'); 
+            
+            alert("¡Compra realizada con éxito!");
+            window.location.href = 'books.html';
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Hubo un problema: " + error.message);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         }
-
-        // Éxito
-        localStorage.removeItem('carritoParaPagar');
-        localStorage.removeItem('myBooks');
-        window.location.href = 'books.html';
-
-    } catch (error) {
-        console.error("Error en la compra:", error);
-        alert("Error: " + error.message);
-        btn.innerHTML = originalText;
-        btn.disabled = false;
     }
-}
-
-// Función auxiliar para el token (si no la tienes)
-function getCookie(name) {
-    let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-    return match ? decodeURIComponent(match[2]) : null;
-}
-    </script>
+</script>
 </body>
 </html>

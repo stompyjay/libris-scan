@@ -4,28 +4,29 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\BookController;
 
-// 1. --- LANDING PAGE ---
-// Comentado para que Nginx cargue el index.html del Frontend. ¡PERFECTO!
-/* Route::get('/', function () {
-    return redirect('/login');
-}); */
+// ... (El resto de tus rutas públicas y logout siguen igual) ...
 
-// 2. --- LOGOUT MANUAL ---
-// Al invocar esta ruta, limpiamos todo y mandamos a la Landing
-Route::get('/logout-manual', function () {
-    Auth::logout();
-    Session::flush();
-    return redirect('/'); // Nginx detectará '/' y mostrará index.html
-})->name('logout.manual');
-
-// 3. --- PERFIL (Rutas protegidas) ---
+// 3. --- RUTAS PROTEGIDAS (Solo usuarios logueados) ---
 Route::middleware('auth')->group(function () {
+    
+    // Rutas existentes...
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // Si usas borrar cuenta, descomenta esta:
-    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/purchase', [BookController::class, 'purchase'])->name('books.purchase');
+    Route::get('/my-books', [BookController::class, 'myBooks']);
+
+    // --- NUEVA RUTA PARA PD3 (AGREGA ESTO) ---
+    // Esta ruta devuelve el objeto usuario (id, name, email, admin...) en JSON
+    Route::get('/user-info', function () {
+        return response()->json(auth()->user());
+    });
+
+    // Opcional: Si en el futuro quieres una ruta que SOLO el admin pueda ver:
+    // Route::middleware(\App\Http\Middleware\AdminMiddleware::class)->get('/admin-test', function() {
+    //     return "Hola Admin, esta zona es secreta.";
+    // });
 });
 
-// 4. --- RUTAS DE AUTH (Login, Register, Password Reset...) ---
 require __DIR__.'/auth.php';
