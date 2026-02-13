@@ -5,13 +5,86 @@ namespace App\Http\Controllers;
 use App\Models\Book;
 use App\Models\Category;
 use App\Models\Author;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Auth;
 
 class BookController extends Controller
 {
-    // --- SCAN (API OPENLIBRARY) ---
+    // ==========================================
+    // VISTAS (PÁGINAS QUE SE VEN EN EL NAVEGADOR)
+    // ==========================================
+
+    /**
+     * Muestra el Tablero de Lectura (Dashboard)
+     * Ruta: /dashboard
+     */
+    public function index()
+    {
+        $user = Auth::user();
+
+        // Si no hay usuario, redirigir al login (protección extra)
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        // Recuperar los libros del usuario con sus relaciones
+        $books = $user->books()
+                      ->with(['category', 'authors'])
+                      ->withPivot('status')
+                      ->orderBy('book_user.created_at', 'desc')
+                      ->get();
+
+        // Ajustar el formato si es necesario para la vista
+        $books->transform(function ($book) {
+            $book->status = $book->pivot->status;
+            return $book;
+        });
+
+        // Retorna la VISTA 'books.blade.php' con los datos
+        return view('books', compact('books'));
+    }
+
+    /**
+     * Muestra la Tienda de Libros
+     * Ruta: /shop
+     */
+    public function shop()
+    {
+        // Aquí podrías mostrar todos los libros del sistema o los más populares
+        // Por ahora enviamos todos para que la tienda no esté vacía
+        $books = Book::with('authors')->inRandomOrder()->limit(20)->get();
+        
+        return view('shop', compact('books'));
+    }
+
+    /**
+     * Muestra la Página de Pago
+     * Ruta: /checkout
+     */
+    public function checkout()
+    {
+        return view('checkout');
+    }
+
+    // ==========================================
+    // API / AJAX (ACCIONES DE JAVASCRIPT)
+    // ==========================================
+
+    // --- UPDATE STATUS (DRAG & DROP) ---
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate(['status' => 'required']);
+        
+        $user = $request->user();
+        
+        // Actualizar el estado en la tabla pivote (book_user)
+        $user->books()->updateExistingPivot($id, ['status' => $request->status]);
+        
+        return response()->json(['message' => 'Estado actualizado']);
+    }
+
+    // --- SCAN (BUSCADOR OPENLIBRARY) ---
     public function scan(Request $request)
     {
         $query = $request->query('query');
@@ -44,58 +117,26 @@ class BookController extends Controller
         }
     }
 
-    // --- MY BOOKS (LISTAR) ---
-    public function myBooks(Request $request)
-    {
-        $user = $request->user(); // SOLO el usuario autenticado
-
-        if (!$user) {
-            return response()->json(['error' => 'Usuario no autenticado'], 401);
-        }
-
-        try {
-            $books = $user->books()
-                          ->with(['category', 'authors']) // Cargar relaciones
-                          ->withPivot('status')
-                          ->orderBy('book_user.created_at', 'desc')
-                          ->get();
-
-            $books->transform(function ($book) {
-                $book->status = $book->pivot->status;
-                return $book;
-            });
-
-            return response()->json($books);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    // --- PURCHASE (COMPRAR) ---
+    // --- PURCHASE (PROCESAR COMPRA) ---
     public function purchase(Request $request)
     {
-        $request->validate(['books' => 'required|array']);
+        // Nota: Si envías los datos por AJAX (fetch/axios), devuelve JSON.
+        // Si usas un formulario HTML estándar, usa redirect().
         
-        $user = $request->user(); // SOLO usuario autenticado
-
-        if (!$user) {
-            return response()->json(['message' => 'Debes iniciar sesión para comprar'], 401);
-        }
+        $request->validate(['books' => 'required|array']);
+        $user = $request->user();
 
         $purchasedBooks = [];
 
         foreach ($request->books as $item) {
+            // Lógica de creación/búsqueda de libro (Mantenida de tu código)
             $titulo = !empty($item['title']) ? $item['title'] : 'Libro sin título';
             $authorName = !empty($item['author']) ? $item['author'] : 'Desconocido';
-            
-            // Categoría
             $catName = $item['suggested_category'] ?? 'General';
+            
             $category = Category::firstOrCreate(['name' => ucfirst($catName)]);
-
-            // Autor
             $authorModel = Author::firstOrCreate(['name' => $authorName]);
 
-            // Libro
             $book = Book::updateOrCreate(
                 ['title' => $titulo],
                 [
@@ -108,30 +149,28 @@ class BookController extends Controller
                 ]
             );
 
-            // Relaciones
             $book->authors()->syncWithoutDetaching([$authorModel->id]);
+            
+            // Añadir al usuario con estado 'pending'
             $user->books()->syncWithoutDetaching([$book->id => ['status' => 'pending']]);
 
-            $book->load('authors');
             $purchasedBooks[] = $book;
         }
 
-        return response()->json([
-            'message' => 'Compra realizada con éxito', 
-            'books' => $purchasedBooks
-        ], 200);
+        // Si la petición espera JSON (AJAX)
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Compra realizada', 'books' => $purchasedBooks], 200);
+        }
+
+        // Si es un formulario normal, redirige al Dashboard
+        return redirect()->route('books.index')->with('success', 'Compra realizada con éxito');
     }
 
-    // --- STORE (GUARDAR MANUAL) ---
+    // --- STORE (GUARDAR MANUAL - OPCIONAL SI USAS EL MODAL) ---
     public function store(Request $request)
     {
         $request->validate(['title' => 'required|string']);
-
-        $user = $request->user(); // <--- CORREGIDO: Eliminado "?? User::first()"
-        
-        if (!$user) {
-            return response()->json(['message' => 'No autorizado'], 401);
-        }
+        $user = $request->user();
 
         $categoryName = $request->suggested_category ?? 'General';
         $category = Category::firstOrCreate(['name' => ucfirst($categoryName)]);
@@ -155,53 +194,11 @@ class BookController extends Controller
 
         if (!$user->books()->where('book_id', $book->id)->exists()) {
             $user->books()->attach($book->id, ['status' => 'pending']);
-            $message = 'Libro añadido a tu biblioteca';
+            $message = 'Libro añadido';
         } else {
             return response()->json(['message' => 'Ya tienes este libro'], 409);
         }
 
-        $book->load('authors');
         return response()->json(['message' => $message, 'book' => $book], 201);
-    }
-
-    // --- DESTROY (ELIMINAR) ---
-    public function destroy(Request $request, $id)
-    {
-        $user = $request->user(); // <--- CORREGIDO
-        if (!$user) return response()->json(['error' => 'No autorizado'], 401);
-
-        $detached = $user->books()->detach($id);
-        
-        if ($detached) return response()->json(['message' => 'Libro eliminado']);
-        return response()->json(['error' => 'No encontrado'], 404);
-    }
-    
-    // --- SHOW (VER UNO) ---
-    public function show(Request $request, $id)
-    {
-        $user = $request->user(); // <--- CORREGIDO
-        if (!$user) return response()->json(['error' => 'No autorizado'], 401);
-
-        $book = $user->books()
-                     ->with(['category', 'authors']) 
-                     ->withPivot('status')
-                     ->find($id);
-
-        if (!$book) return response()->json(['error' => 'No encontrado'], 404);
-        
-        $book->status = $book->pivot->status;
-        return response()->json($book);
-    }
-
-    // --- UPDATE STATUS ---
-    public function updateStatus(Request $request, $id)
-    {
-        $request->validate(['status' => 'required']);
-        
-        $user = $request->user(); // <--- CORREGIDO
-        if (!$user) return response()->json(['error' => 'No autorizado'], 401);
-
-        $user->books()->updateExistingPivot($id, ['status' => $request->status]);
-        return response()->json(['message' => 'Estado actualizado']);
     }
 }

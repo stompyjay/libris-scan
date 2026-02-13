@@ -18,7 +18,7 @@ use App\Http\Controllers\PurchaseController;
 // --- ¡LA SOLUCIÓN! ---
 // La hemos movido aquí arriba. Ahora Laravel dejará pasar la petición, 
 // y tu controlador usará el User::first() para mostrar los datos.
-Route::get('/my-books', [BookController::class, 'myBooks']);
+
 
 // Otras rutas públicas
 Route::get('/reviews', [ReviewController::class, 'index']);
@@ -49,14 +49,6 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     // Route::get('/my-books', ...); <--- ELIMINADA DE AQUÍ
     
-    Route::patch('/books/{id}/status', [BookController::class, 'updateStatus']);
 
-    Route::apiResource('categories', CategoryController::class);
-    Route::apiResource('books',      BookController::class);
-    Route::apiResource('authors',    AuthorController::class);
-
-    Route::get('/scan',   [BookSearchController::class, 'index']);
-    Route::post('/scan',  [BookSearchController::class, 'search']); 
-    Route::get('/browse', [BookSearchController::class, 'browseByCategory']);
 
 });

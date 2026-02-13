@@ -3,208 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="">
     <title>Dashboard - eBookStore</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <style>
+        /* Estilos Globales Dark Mode */
         body { background-color: #121214; color: #ffffff; font-family: 'Inter', sans-serif; }
+        
+        /* Ajuste Main Content para Sidebar */
         @media (min-width: 768px) { .main-content { margin-left: 260px; } }
         
-        /* Ajuste para que el botón parezca una tarjeta */
-        .book-card { background-color: #1a1a1e; border-radius: 20px; overflow: hidden; transition: all 0.3s; border: 1px solid #27272a; display: block; width: 100%; text-align: left; }
-        .book-card:hover, .book-card:focus { transform: translateY(-10px); border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); }
+        /* Tarjeta de Libro (Usada por el JS) */
+        .book-card { 
+            background-color: #1a1a1e; 
+            border-radius: 20px; 
+            overflow: hidden; 
+            transition: all 0.3s; 
+            border: 1px solid #27272a; 
+            display: flex; 
+            flex-direction: column; 
+            width: 100%; 
+        }
+        .book-card:hover { 
+            transform: translateY(-5px); 
+            border-color: #3b82f6; 
+            box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3); 
+        }
         
-        .category-select { background: #1a1a1e; border: 1px solid #333; border-radius: 12px; padding: 10px; color: white; outline: none; }
+        /* Selectores y Inputs */
+        .category-select { background: #1a1a1e; border: 1px solid #333; border-radius: 12px; color: white; outline: none; }
         .category-select:focus { border-color: #3b82f6; }
         
+        /* Animaciones y Utilidades */
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Scrollbar personalizado para el carrito */
+        /* Scrollbar Carrito */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1e; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
-<body class="min-h-screen pb-20 md:pb-0 flex flex-col">
 
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white p-4 rounded-lg z-[100]">
-        Saltar al contenido principal
-    </a>
+<body class="min-h-screen pb-20 md:pb-0 flex flex-col">
 
     <aside class="hidden md:flex flex-col w-64 bg-[#1a1a1e] h-screen fixed left-0 top-0 border-r border-gray-800 p-6 z-40">
         <div class="text-2xl font-bold text-blue-500 mb-10 flex items-center gap-2">
-            <i class="fas fa-bolt" aria-hidden="true"></i> eBookStore
+            <i class="fas fa-bolt"></i> eBookStore
         </div>
-        <nav class="space-y-4 flex-1" aria-label="Menú lateral">
-            <a href="dashboard.html" aria-current="page" class="flex items-center gap-3 text-white bg-blue-600/10 p-3 rounded-xl border border-blue-600/20">
-                <i class="fas fa-shopping-bag w-5 text-blue-500" aria-hidden="true"></i> Tienda
+        <nav class="space-y-4 flex-1">
+            <a href="#" class="flex items-center gap-3 text-white bg-blue-600/10 p-3 rounded-xl border border-blue-600/20">
+                <i class="fas fa-shopping-bag w-5 text-blue-500"></i> Tienda
             </a>
-            <a href="books.html" class="flex items-center gap-3 text-gray-400 hover:text-white p-3 rounded-xl hover:bg-gray-800 transition">
-                <i class="fas fa-bookmark w-5" aria-hidden="true"></i> Mis Libros
+            <a href="/books" class="flex items-center gap-3 text-gray-400 hover:text-white p-3 rounded-xl hover:bg-gray-800 transition">
+                <i class="fas fa-bookmark w-5"></i> Mis Libros
             </a>
         </nav>
 
         <div class="mt-auto border-t border-gray-800 pt-6 space-y-4">
-            <a href="/profile" class="flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-800 rounded-xl transition">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold" aria-hidden="true">👤</div>
+            <div class="flex items-center gap-3 p-2 rounded-xl">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold">👤</div>
                 <div>
                     <p id="sidebar-name" class="text-sm font-bold">Cargando...</p>
                     <p class="text-[10px] text-gray-400 uppercase font-black">Configuración</p>
                 </div>
-            </a>
+            </div>
             <button onclick="logout()" class="flex items-center gap-3 text-red-400 hover:text-red-300 p-3 w-full hover:bg-red-500/10 rounded-xl transition text-left">
-                <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Salir de la cuenta
+                <i class="fas fa-sign-out-alt"></i> Salir de la cuenta
             </button>
         </div>
     </aside>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a1e]/90 backdrop-blur-md border-t border-gray-800 px-6 py-3 flex justify-between items-center z-50 md:hidden" aria-label="Menú móvil">
-        <a href="dashboard.html" class="text-blue-500 flex flex-col items-center gap-1" aria-label="Tienda"><i class="fas fa-shopping-bag text-xl"></i></a>
-        <a href="books.html" class="text-gray-400 flex flex-col items-center gap-1" aria-label="Mis Libros"><i class="fas fa-bookmark text-xl"></i></a>
-        <a href="/profile" class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white" aria-label="Perfil">👤</a>
-        <button onclick="logout()" class="text-red-400 flex flex-col items-center gap-1" aria-label="Cerrar sesión"><i class="fas fa-sign-out-alt text-xl"></i></button>
+    <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a1e]/90 backdrop-blur-md border-t border-gray-800 px-6 py-3 flex justify-between items-center z-50 md:hidden">
+        <a href="#" class="text-blue-500 flex flex-col items-center gap-1"><i class="fas fa-shopping-bag text-xl"></i></a>
+        <a href="/books" class="text-gray-400 flex flex-col items-center gap-1"><i class="fas fa-bookmark text-xl"></i></a>
+        <button onclick="logout()" class="text-red-400 flex flex-col items-center gap-1"><i class="fas fa-sign-out-alt text-xl"></i></button>
     </nav>
 
     <div class="main-content">
-        <main id="main-content" class="container mx-auto px-6 max-w-6xl pb-10">
+        <main id="main-content" class="container mx-auto px-6 max-w-6xl pb-10 pt-6">
             
-            <header class="py-6">
+            <header class="mb-8">
                 <div class="flex items-center justify-between mb-8">
-                    <div class="flex items-center gap-4">
-                        <a href="/profile" class="md:hidden w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white" aria-label="Ir a perfil">👤</a>
-                        <div>
-                            <h1 class="text-2xl font-black">Hola, <span id="header-name" class="text-blue-500">Lector</span></h1>
-                            <p class="text-xs text-gray-300 uppercase tracking-widest font-bold">Miembro Premium</p>
-                        </div>
+                    <div>
+                        <h1 class="text-2xl font-black">Hola, <span id="header-name" class="text-blue-500">...</span></h1>
+                        <p class="text-xs text-gray-300 uppercase tracking-widest font-bold">Bienvenido de nuevo</p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-800 shadow-2xl">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-800 shadow-xl">
                     <div class="md:col-span-1 h-full">
-                        <label for="category-select" class="sr-only">Seleccionar Categoría</label>
                         <select id="category-select" onchange="searchByCategory()" 
-                                class="w-full category-select text-sm font-bold h-full bg-[#1a1a1e] text-white border border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500 custom-scrollbar">
-                            
+                                class="w-full category-select text-sm font-bold h-full px-4 py-3 custom-scrollbar">
                             <option value="fiction">📚 Explorar todo</option>
-
-                            <optgroup label="Géneros Literarios">
-                                <option value="novel">Novela</option>
-                                <option value="short_story">Cuento / Relato</option>
-                                <option value="poetry">Poesía</option>
-                                <option value="plays">Teatro / Dramaturgia</option>
-                                <option value="essay">Ensayo</option>
-                                <option value="fables">Fábulas</option>
-                                <option value="legends">Mitos y Leyendas</option>
-                                <option value="biography">Biografías y Memorias</option>
-                                <option value="chronicle">Crónica</option>
-                            </optgroup>
-
-                            <optgroup label="Temáticas y Colecciones">
-                                <option value="children">Infantil y Juvenil 🧸</option>
-                                <option value="fantasy">Fantasía y Magia 🧙‍♂️</option>
+                            <optgroup label="Géneros">
                                 <option value="science_fiction">Ciencia Ficción 🚀</option>
-                                <option value="mystery_and_detective_stories">Misterio y Policial 🔍</option>
-                                <option value="horror">Terror y Sobrenatural 👻</option>
-                                <option value="romance">Romance y Sentimientos ❤️</option>
-                                <option value="historical">Novela Histórica 🏛️</option>
-                                <option value="philosophy">Filosofía y Pensamiento 🧠</option>
-                                <option value="adventure">Aventuras y Viajes 🌍</option>
-                                <option value="humor">Humor y Sátira 😄</option>
-                                <option value="psychology">Psicológico</option>
+                                <option value="fantasy">Fantasía 🧙‍♂️</option>
+                                <option value="mystery">Misterio 🔍</option>
+                                <option value="horror">Terror 👻</option>
+                                <option value="romance">Romance ❤️</option>
+                                <option value="history">Historia 🏛️</option>
                             </optgroup>
-
-                            <optgroup label="Formatos Especiales">
-                                <option value="audiobooks">Audiolibros 🎧</option>
-                                <option value="textbooks">Manuales y Didáctica</option>
-                                <option value="art">Arte y Arquitectura</option>
-                                <option value="recipes">Gastronomía y Cocina</option>
-                            </optgroup>
-
                         </select>
                     </div>
 
                     <div class="md:col-span-3 flex gap-2">
                         <div class="relative flex-1">
-                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
-                            <label for="api-search" class="sr-only">Buscar libros por título o autor</label>
-                            <input type="text" id="api-search" placeholder="Buscar libros por título o autor..." 
+                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="api-search" placeholder="Buscar libro, autor o ISBN..." 
                                    class="w-full bg-[#121214] border border-gray-700 rounded-xl py-3 pl-12 pr-4 focus:border-blue-500 outline-none transition text-white">
                         </div>
-                        <button onclick="searchBooks()" class="bg-blue-600 hover:bg-blue-700 px-6 rounded-xl font-bold transition flex items-center gap-2 focus:ring-4 focus:ring-blue-500/50">
+                        <button onclick="searchBooks()" class="bg-blue-600 hover:bg-blue-700 px-6 rounded-xl font-bold transition flex items-center gap-2 min-w-[100px] justify-center">
                             <span id="btn-text">Buscar</span>
                             <div id="loader" class="loader"></div>
                         </button>
                     </div>
                 </div>
             </header>
+
             <div id="admin-toolbar" class="hidden mb-8 animate-[fadeIn_0.5s]">
-                <div class="bg-blue-900/20 border border-blue-500/30 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 backdrop-blur-sm">
+                <div class="bg-yellow-900/20 border border-yellow-600/30 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center gap-3">
-                        <div class="bg-blue-600 text-white text-xs font-black px-2 py-1 rounded shadow shadow-blue-500/50">ADMIN</div>
-                        <p class="text-sm text-blue-200 font-medium">Modo Gestión</p>
+                        <div class="bg-yellow-600 text-black text-xs font-black px-2 py-1 rounded">ADMIN</div>
+                        <p class="text-sm text-yellow-200 font-medium">Panel de Control</p>
                     </div>
                     <div class="flex gap-3 w-full md:w-auto">
                         <button onclick="loadLocalCatalog()" class="flex-1 md:flex-none bg-[#1a1a1e] hover:bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
-                            <i class="fas fa-database text-yellow-500"></i> Mi Inventario
+                            <i class="fas fa-database text-blue-500"></i> Mi Base de Datos
                         </button>
-                        <button onclick="openAdminModal()" class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-600/20 transition flex items-center justify-center gap-2">
-                            <i class="fas fa-plus"></i> Crear Libro
+                        <button onclick="openAdminModal()" class="flex-1 md:flex-none bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
+                            <i class="fas fa-plus"></i> Nuevo Libro
                         </button>
                     </div>
                 </div>
             </div>
+
             <h2 id="results-title" class="text-xl font-bold mb-6 flex items-center gap-2">
-                <i class="fas fa-sparkles text-yellow-500" aria-hidden="true"></i> Libros Destacados
+                <i class="fas fa-sparkles text-yellow-500"></i> Libros Destacados
             </h2>
             
-            <div id="api-results-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"></div>
+            <div id="api-results-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            </div>
         </main>
     </div>
 
-    <div id="drop-zone" class="fixed right-4 top-24 bottom-4 w-72 bg-[#1a1a1e] border-2 border-dashed border-gray-700 rounded-2xl p-4 flex flex-col shadow-2xl z-40 transition-colors hidden md:flex">
+    <div id="drop-zone" class="fixed right-4 top-24 bottom-4 w-80 bg-[#1a1a1e] border-2 border-dashed border-gray-700 rounded-2xl p-4 flex flex-col shadow-2xl z-30 transition-colors hidden md:flex">
         <div class="text-center border-b border-gray-700 pb-3 mb-3">
-            <i class="fas fa-shopping-cart text-3xl text-blue-500 mb-2" aria-hidden="true"></i>
-            <h3 class="font-bold text-white">Tu Carrito</h3>
-            <p id="empty-msg" class="text-xs text-gray-400 mt-1">Arrastra libros aquí</p>
+            <i class="fas fa-shopping-cart text-3xl text-blue-500 mb-2"></i>
+            <h3 class="font-bold text-white">Carrito de Compra</h3>
+            <p id="empty-msg" class="text-xs text-gray-400 mt-1">Arrastra libros aquí para añadir</p>
         </div>
 
         <div id="cart-list" class="flex-1 overflow-y-auto space-y-2 hidden custom-scrollbar pb-2">
-            </div>
+        </div>
 
-        <div id="cart-actions" class="mt-auto hidden">
+        <div id="cart-actions" class="mt-auto hidden border-t border-gray-700 pt-3">
             <div class="flex justify-between text-sm font-bold mb-3 px-1">
                 <span>Total:</span>
-                <span id="cart-total" class="text-blue-400">0.00€</span>
+                <span id="cart-total" class="text-green-400">0.00€</span>
             </div>
-            <button onclick="checkoutAll()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition focus:ring-4 focus:ring-green-500/50">
-                Pagar Todo
+            <button onclick="checkoutAll()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-green-600/20">
+                <i class="fas fa-credit-card mr-2"></i> Pagar Todo
             </button>
         </div>
     </div>
 
-    <div id="product-modal" class="fixed inset-0 z-[60] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl relative text-gray-800">
-            <button onclick="closeModal('product-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 z-10 text-2xl focus:outline-none focus:text-red-500" aria-label="Cerrar modal">
+    <div id="product-modal" class="fixed inset-0 z-[60] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-[#1a1a1e] border border-gray-700 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-2xl relative flex flex-col md:flex-row animate-[fadeIn_0.3s]">
+            
+            <button onclick="closeModal('product-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-white z-10 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center">
                 <i class="fas fa-times"></i>
             </button>
-            <div class="flex flex-col md:flex-row">
-                <div class="md:w-1/2 bg-gray-100 p-8 flex items-center justify-center">
-                    <img id="modal-img" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Portada del libro" class="shadow-2xl rounded-lg max-h-72 object-cover" onerror="this.src='https://placehold.co/150x220/1a1a1e/FFFFFF?text=Sin+Portada'">
-                </div>
-                <div class="md:w-1/2 p-10">
-                    <span class="text-blue-600 font-black text-[10px] uppercase mb-2 block">Versión Digital</span>
-                    
-                    <h2 id="modal-title" class="text-2xl font-black mb-2">
-                        <span class="sr-only">Detalle del Libro</span>
-                    </h2>
-                    
-                    <p id="modal-author" class="text-gray-500 text-sm mb-6"></p>
-                    <div class="flex items-center justify-between mt-auto">
-                        <span class="text-3xl font-bold">9.95€</span>
-                        <button id="buy-btn" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-blue-700 transition focus:ring-4 focus:ring-blue-500/50">
+
+            <div class="md:w-2/5 bg-gray-800 relative group">
+                <img id="modal-img" src="" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition">
+            </div>
+
+            <div class="md:w-3/5 p-8 flex flex-col">
+                <span class="text-blue-500 font-bold text-[10px] uppercase tracking-widest mb-2">Libro Seleccionado</span>
+                <h2 id="modal-title" class="text-2xl font-black mb-1 text-white leading-tight">Título</h2>
+                <p id="modal-author" class="text-gray-400 text-sm mb-6 font-medium italic"></p>
+                
+                <div class="mt-auto pt-6 border-t border-gray-700">
+                    <div class="flex items-center justify-between gap-4">
+                        <span class="text-3xl font-bold text-white">9.95€</span>
+                        <button id="buy-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-500 transition shadow-lg shadow-blue-600/20">
                             Añadir al Carrito
                         </button>
                     </div>
@@ -212,60 +199,82 @@
             </div>
         </div>
     </div>
+
     <div id="admin-modal" class="fixed inset-0 z-[80] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-[#1a1a1e] w-full max-w-lg rounded-3xl border border-gray-700 shadow-2xl p-8 relative animate-[fadeIn_0.3s]">
-        <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition">
-            <i class="fas fa-times text-xl"></i>
-        </button>
-        <h2 id="admin-modal-title" class="text-2xl font-black text-white mb-6">Nuevo Libro</h2>
-        <form id="admin-form" onsubmit="handleSaveBook(event)" class="space-y-4">
-            <input type="hidden" id="edit-book-id">
-            <div>
-                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Título</label>
-                <input type="text" id="edit-title" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1">Autor</label>
-                    <input type="text" id="edit-author" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1">Precio (€)</label>
-                    <input type="number" step="0.01" id="edit-price" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
-                </div>
-            </div>
-            <div>
-                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Categoría</label>
-                <select id="edit-category" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
-                    <option value="1">Ficción</option>
-                    <option value="2">No Ficción</option>
-                    <option value="3">Terror</option>
-                </select>
-            </div>
-            <div>
-                <label class="text-xs font-bold text-gray-400 uppercase ml-1">URL Portada</label>
-                <input type="url" id="edit-cover" placeholder="https://..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none">
-            </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 mt-4 transition">
-                Guardar Libro
+        <div class="bg-[#1a1a1e] w-full max-w-lg rounded-3xl border border-yellow-600/30 shadow-2xl p-8 relative animate-[fadeIn_0.3s]">
+            
+            <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition">
+                <i class="fas fa-times text-xl"></i>
             </button>
-        </form>
+            
+            <h2 id="admin-modal-title" class="text-2xl font-black text-white mb-6 border-l-4 border-yellow-500 pl-4">Gestión de Libro</h2>
+            
+            <form id="admin-form" onsubmit="handleSaveBook(event)" class="space-y-4">
+                <input type="hidden" id="edit-book-id">
+                
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Título</label>
+                    <input type="text" id="edit-title" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Autor</label>
+                        <input type="text" id="edit-author" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Precio (€)</label>
+                        <input type="number" step="0.01" id="edit-price" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Categoría (ID)</label>
+                        <select id="edit-category" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                            <option value="1">1 - Ficción</option>
+                            <option value="2">2 - Técnica</option>
+                            <option value="3">3 - Terror</option>
+                            <option value="4">4 - Aventura</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">URL Portada</label>
+                        <input type="url" id="edit-cover" placeholder="http://..." required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-4 rounded-xl shadow-lg shadow-yellow-600/20 mt-6 transition transform hover:scale-[1.02]">
+                    <i class="fas fa-save mr-2"></i> Guardar Cambios
+                </button>
+            </form>
+        </div>
     </div>
-</div>
-    <script>
+
+<script>
     const API_BASE_URL = '/api'; 
 
     let currentBooks = [];
     let cart = [];
-    let isAdmin = false; // NUEVO: Estado de admin
+    let isAdmin = false; 
+
+    // --- FUNCION AUXILIAR PARA OBTENER COOKIES (CSRF) ---
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+        return null;
+    }
 
     // 1. CARGAR PERFIL Y VERIFICAR ADMIN
     async function loadUserProfile() {
         try {
             const response = await fetch(`${API_BASE_URL}/user`, {
                 method: 'GET',
-                credentials: 'include', 
-                headers: { 'Accept': 'application/json' }
+                headers: { 
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
 
             if (response.status === 401) { 
@@ -276,13 +285,10 @@
             if (response.ok) {
                 const userData = await response.json();
                 
-                console.log("MIS DATOS DE USUARIO:", userData);
-                // Actualizar nombres en pantalla
-                const headerName = document.getElementById('header-name');
-                const sidebarName = document.getElementById('sidebar-name');
-                if(headerName) headerName.innerText = userData.name;
-                if(sidebarName) sidebarName.innerText = userData.name;
-
+                // ACTUALIZAMOS EL DOM (Que antes hacía Blade)
+                document.getElementById('sidebar-name').textContent = userData.name;
+                document.getElementById('header-name').textContent = userData.name;
+                
                 // --- DETECTAR ADMIN ---
                 if (userData.admin === 1 || userData.role === 'admin' || userData.is_admin === 1) {
                     isAdmin = true;
@@ -300,7 +306,6 @@
         const grid = document.getElementById('api-results-grid');
         const titleHeader = document.getElementById('results-title');
 
-        // Cambiar título según lo que estemos viendo
         if (source === 'local') {
             titleHeader.innerHTML = '<i class="fas fa-database text-blue-500"></i> Mi Inventario (Base de Datos)';
         } else {
@@ -315,7 +320,6 @@
         grid.innerHTML = books.map((book, index) => {
             const isLocal = source === 'local';
             
-            // Datos dinámicos según origen (API externa vs Tu Base de Datos)
             const cover = isLocal ? (book.cover || 'https://placehold.co/150x220?text=Sin+Img') : getBestCover(book);
             const author = isLocal ? (book.author || 'Desconocido') : getBestAuthor(book);
             const category = isLocal ? 'Inventario' : getBestCategory(book);
@@ -370,13 +374,13 @@
     async function loadLocalCatalog() {
         toggleLoader(true);
         try {
-            const res = await fetch('/api/books'); // Asegúrate que esta ruta existe en Laravel
+            const res = await fetch('/api/books'); 
             if (!res.ok) throw new Error("Error cargando inventario");
             const books = await res.json();
             renderBooks(books, 'local');
         } catch (e) {
             console.error(e);
-            alert("No se pudo cargar tu inventario.");
+            alert("No se pudo cargar tu inventario (asegúrate de tener la API /api/books).");
         } finally {
             toggleLoader(false);
         }
@@ -418,7 +422,9 @@
 
         const url = isEdit ? `/api/books/${id}` : '/api/books';
         const method = isEdit ? 'PUT' : 'POST';
-        const xsrfToken = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
+        
+        // CORRECCIÓN: Obtener el token de la Cookie XSRF-TOKEN
+        const csrfToken = getCookie('XSRF-TOKEN');
 
         try {
             const res = await fetch(url, {
@@ -426,14 +432,14 @@
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-XSRF-TOKEN': decodeURIComponent(xsrfToken)
+                    'X-XSRF-TOKEN': csrfToken // Usamos X-XSRF-TOKEN para cookies
                 },
                 body: JSON.stringify(data)
             });
 
             if (res.ok) {
                 document.getElementById('admin-modal').classList.add('hidden');
-                loadLocalCatalog(); // Recargar la lista
+                loadLocalCatalog(); 
                 alert("Guardado correctamente");
             } else {
                 alert("Error al guardar");
@@ -443,12 +449,13 @@
 
     async function deleteBook(id) {
         if(!confirm("¿Borrar libro permanentemente?")) return;
-        const xsrfToken = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
+        const csrfToken = getCookie('XSRF-TOKEN');
+        
         try {
             const res = await fetch(`/api/books/${id}`, {
                 method: 'DELETE',
                 headers: { 
-                    'X-XSRF-TOKEN': decodeURIComponent(xsrfToken),
+                    'X-XSRF-TOKEN': csrfToken,
                     'Accept': 'application/json' 
                 }
             });
@@ -505,8 +512,7 @@
     }
 
     function prepararYAgregar(rawBook) {
-        // Detectar si es libro local o de API para añadir al carrito
-        const isLocal = rawBook.id && rawBook.created_at; // forma simple de detectar modelo local
+        const isLocal = rawBook.id && rawBook.created_at; 
         
         const bookForCart = {
             title: rawBook.title,
@@ -518,7 +524,6 @@
     }
 
     function addToCart(book) {
-        // Evitar duplicados exactos
         if(cart.find(b => b.title === book.title)) return;
         cart.push(book);
         renderCart();
@@ -561,10 +566,14 @@
         renderCart();
     };
 
+    // --- CAMBIO CLAVE: Redirección HTML estática ---
     window.checkoutAll = function() {
         if(cart.length === 0) { alert("El carrito está vacío"); return; }
+        
         localStorage.setItem('carritoParaPagar', JSON.stringify(cart));
-        window.location.href = 'shop.html'; // Asegúrate de tener esta página o redirigir a donde quieras
+        
+        // Ya no usamos Blade {{ route }}, sino enlace directo
+        window.location.href = "/checkout"; 
     };
 
     // --- MODALES Y SEARCH ---
@@ -584,8 +593,6 @@
         document.getElementById('modal-author').innerText = author;
         
         const btn = document.getElementById('buy-btn');
-        // Actualizar precio en el modal visualmente si quieres, o dejarlo fijo
-        // Aquí simplificamos al botón:
         btn.onclick = () => {
             prepararYAgregar(book);
             closeModal('product-modal');
@@ -629,15 +636,16 @@
 
     async function logout() {
         if(!confirm("¿Cerrar sesión?")) return;
+        
+        const csrfToken = getCookie('XSRF-TOKEN');
+
         try { 
-            const token = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
             await fetch('/logout', { 
                 method: 'POST', 
-                credentials: 'include',
                 headers: { 
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-XSRF-TOKEN': decodeURIComponent(token) 
+                    'X-XSRF-TOKEN': csrfToken
                 } 
             }); 
             localStorage.removeItem('myBooks');
@@ -649,6 +657,7 @@
         loadUserProfile();
         searchByCategory();
     };
-    </script>
+</script>
+
 </body>
 </html>
