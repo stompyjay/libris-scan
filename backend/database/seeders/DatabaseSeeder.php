@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         // 2. AQUI LLAMAS A TU REVIEW SEEDER
         $this->call([
             ReviewSeeder::class,
+            AdminUserSeeder::class,
             // Si tuvieras BookSeeder::class, lo pondrías aquí también
         ]);
     }

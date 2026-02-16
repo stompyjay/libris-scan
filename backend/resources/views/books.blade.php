@@ -166,12 +166,9 @@
     </main>
 
     <script>
-    // Configuración dFlip
     var dFlipLocation = "{{ asset('dflip') }}/";
 
-    // --- 1. LÓGICA DRAG & DROP ---
     function dragStart(event, bookId) {
-        // Guardamos el ID del libro
         event.dataTransfer.setData("text/plain", bookId);
         event.dataTransfer.effectAllowed = "move";
         event.target.classList.add('dragging');
@@ -182,7 +179,7 @@
     }
 
     function allowDrop(event) {
-        event.preventDefault(); // Necesario para permitir soltar
+        event.preventDefault();
         event.currentTarget.classList.add('drag-over');
     }
 
@@ -197,19 +194,15 @@
         const bookId = event.dataTransfer.getData("text/plain");
         if (!bookId) return;
 
-        // Buscar la tarjeta por su atributo data-id
         const card = document.querySelector(`.book-card[data-id='${bookId}']`);
         const destination = newStatus === 'pending' ? document.getElementById('pending-list') : document.getElementById('completed-list');
         
-        // Mover visualmente
         if(card && destination) {
             destination.appendChild(card);
             
-            // Actualizar estilos visuales según columna (opcional, cambio de borde)
             if(newStatus === 'completed') {
                 card.classList.remove('border-blue-500');
                 card.classList.add('border-green-500');
-                // Actualizar badge
                 const badge = card.querySelector('span');
                 if(badge) {
                     badge.className = 'text-xs font-semibold px-2 py-1 rounded bg-green-100 text-green-800';
@@ -218,7 +211,6 @@
             } else {
                 card.classList.remove('border-green-500');
                 card.classList.add('border-blue-500');
-                // Actualizar badge
                 const badge = card.querySelector('span');
                 if(badge) {
                     badge.className = 'text-xs font-semibold px-2 py-1 rounded bg-blue-100 text-blue-800';
@@ -228,14 +220,16 @@
             updateCounters();
         }
 
-        // Llamada API
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         try {
-            // Asegúrate de que esta ruta coincida con tu api.php o web.php
-            // Ejemplo: Route::patch('/books/{book}/status', ...)
-            await fetch(`/api/books/${bookId}/status`, { 
-                method: 'POST', // A veces Laravel prefiere POST con _method: PATCH
+            // =========================================================
+            // CORRECCIÓN CRÍTICA:
+            // Eliminé "/api" porque tu ruta en web.php NO lo tiene.
+            // Si tu ruta es Route::patch('/books/...') la petición debe ser a '/books/...'
+            // =========================================================
+            await fetch(`/books/${bookId}/status`, { 
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -243,7 +237,7 @@
                 },
                 body: JSON.stringify({ 
                     status: newStatus,
-                    _method: 'PATCH' // Truco para asegurar compatibilidad
+                    _method: 'PATCH'
                 })
             });
             console.log('Estado actualizado a:', newStatus);
@@ -252,7 +246,6 @@
         }
     }
 
-    // --- 2. LÓGICA LECTOR ---
     function openReader(title, pdfUrl) {
         const modal = document.getElementById('reader-modal');
         const container = document.getElementById('flipbook-container');

@@ -15,7 +15,7 @@
         /* Ajuste Main Content para Sidebar */
         @media (min-width: 768px) { .main-content { margin-left: 260px; } }
         
-        /* Tarjeta de Libro (Usada por el JS) */
+        /* Tarjeta de Libro */
         .book-card { 
             background-color: #1a1a1e; 
             border-radius: 20px; 
@@ -65,13 +65,17 @@
         </nav>
 
         <div class="mt-auto border-t border-gray-800 pt-6 space-y-4">
-            <div class="flex items-center gap-3 p-2 rounded-xl">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold">👤</div>
-                <div>
-                    <p id="sidebar-name" class="text-sm font-bold">Cargando...</p>
-                    <p class="text-[10px] text-gray-400 uppercase font-black">Configuración</p>
+            <a href="/profile" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-800 transition cursor-pointer group">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold group-hover:scale-110 transition">
+                    👤
                 </div>
-            </div>
+                <div>
+                    <p id="sidebar-name" class="text-sm font-bold text-gray-200 group-hover:text-white">Cargando...</p>
+                    <p class="text-[10px] text-gray-400 uppercase font-black group-hover:text-blue-400 transition">
+                        <i class="fas fa-cog mr-1"></i> Configuración
+                    </p>
+                </div>
+            </a>
             <button onclick="logout()" class="flex items-center gap-3 text-red-400 hover:text-red-300 p-3 w-full hover:bg-red-500/10 rounded-xl transition text-left">
                 <i class="fas fa-sign-out-alt"></i> Salir de la cuenta
             </button>
@@ -230,12 +234,9 @@
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Categoría (ID)</label>
+                        <label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Categoría</label>
                         <select id="edit-category" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
-                            <option value="1">1 - Ficción</option>
-                            <option value="2">2 - Técnica</option>
-                            <option value="3">3 - Terror</option>
-                            <option value="4">4 - Aventura</option>
+                            <option value="">Cargando...</option>
                         </select>
                     </div>
                     <div>
@@ -258,7 +259,6 @@
     let cart = [];
     let isAdmin = false; 
 
-    // --- FUNCION AUXILIAR PARA OBTENER COOKIES (CSRF) ---
     function getCookie(name) {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
@@ -266,41 +266,44 @@
         return null;
     }
 
-    // 1. CARGAR PERFIL Y VERIFICAR ADMIN
     async function loadUserProfile() {
         try {
             const response = await fetch(`${API_BASE_URL}/user`, {
                 method: 'GET',
-                headers: { 
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
 
-            if (response.status === 401) { 
-                window.location.href = '/'; 
-                return; 
-            }
+            if (response.status === 401) { window.location.href = '/'; return; }
 
             if (response.ok) {
                 const userData = await response.json();
-                
-                // ACTUALIZAMOS EL DOM (Que antes hacía Blade)
                 document.getElementById('sidebar-name').textContent = userData.name;
                 document.getElementById('header-name').textContent = userData.name;
                 
-                // --- DETECTAR ADMIN ---
                 if (userData.admin === 1 || userData.role === 'admin' || userData.is_admin === 1) {
                     isAdmin = true;
                     document.getElementById('admin-toolbar').classList.remove('hidden');
                 }
             }
-        } catch (error) { 
-            console.error("Error cargando perfil:", error); 
-        }
+        } catch (error) { console.error("Error cargando perfil:", error); }
     }
 
-    // 2. RENDERIZADO (MODIFICADO PARA ADMIN)
+    async function loadCategoriesForAdmin() {
+        try {
+            const res = await fetch('/api/categories'); 
+            if (!res.ok) throw new Error("Error cargando categorías");
+            const categories = await res.json();
+            const select = document.getElementById('edit-category');
+            select.innerHTML = ''; 
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.text = cat.name;
+                select.appendChild(option);
+            });
+        } catch (e) { console.error("Error cargando cats", e); }
+    }
+
     function renderBooks(books, source = 'api') {
         currentBooks = books; 
         const grid = document.getElementById('api-results-grid');
@@ -322,11 +325,18 @@
             
             const cover = isLocal ? (book.cover || 'https://placehold.co/150x220?text=Sin+Img') : getBestCover(book);
             const author = isLocal ? (book.author || 'Desconocido') : getBestAuthor(book);
-            const category = isLocal ? 'Inventario' : getBestCategory(book);
+            
+            // Calculamos la categoría para mostrarla
+            let categoryName = 'General';
+            if (isLocal) {
+                if (book.category && book.category.name) categoryName = book.category.name;
+            } else {
+                categoryName = getBestCategory(book);
+            }
+
             const price = isLocal ? book.price + '€' : '9.95€';
             const titleSafe = (book.title || "Sin Título").replace(/"/g, '&quot;'); 
 
-            // Botones de Admin (Solo si es local y eres admin)
             let adminBtns = '';
             if (isLocal && isAdmin) {
                 adminBtns = `
@@ -345,17 +355,11 @@
                     onclick="openProductModal(${index})" 
                     draggable="true"
                     ondragstart="empezarArrastre(event, ${index})">
-                    
                     ${adminBtns}
-
                     <div class="overflow-hidden h-56 relative bg-gray-800 w-full">
-                        <img src="${cover}" alt="${titleSafe}" loading="lazy"
-                             class="w-full h-full object-cover group-hover:scale-110 transition duration-500 pointer-events-none">
-                        <span class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg border border-white/10 shadow-lg">
-                            ${category}
-                        </span>
+                        <img src="${cover}" alt="${titleSafe}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition duration-500 pointer-events-none">
+                        <span class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg border border-white/10 shadow-lg">${categoryName}</span>
                     </div>
-
                     <div class="p-4 flex flex-col flex-1 w-full">
                         <h4 class="font-bold text-xs truncate text-white text-left mb-1">${book.title}</h4>
                         <p class="text-[10px] text-gray-400 truncate text-left mb-2">${author}</p>
@@ -364,13 +368,11 @@
                             <i class="fas fa-cart-plus text-gray-500 text-xs"></i>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
         }).join('');
     }
 
     // --- FUNCIONES DE ADMINISTRACIÓN ---
-
     async function loadLocalCatalog() {
         toggleLoader(true);
         try {
@@ -380,17 +382,15 @@
             renderBooks(books, 'local');
         } catch (e) {
             console.error(e);
-            alert("No se pudo cargar tu inventario (asegúrate de tener la API /api/books).");
-        } finally {
-            toggleLoader(false);
-        }
+            alert("No se pudo cargar tu inventario.");
+        } finally { toggleLoader(false); }
     }
 
     function openAdminModal(index = null) {
         const modal = document.getElementById('admin-modal');
         const form = document.getElementById('admin-form');
         
-        if (index !== null) { // Editar
+        if (index !== null) { 
             const book = currentBooks[index];
             document.getElementById('admin-modal-title').innerText = "Editar Libro";
             document.getElementById('edit-book-id').value = book.id;
@@ -398,8 +398,8 @@
             document.getElementById('edit-author').value = book.author;
             document.getElementById('edit-price').value = book.price;
             document.getElementById('edit-cover').value = book.cover;
-            // document.getElementById('edit-category').value = book.category_id;
-        } else { // Crear
+            if(book.category_id) document.getElementById('edit-category').value = book.category_id;
+        } else { 
             document.getElementById('admin-modal-title').innerText = "Nuevo Libro";
             form.reset();
             document.getElementById('edit-book-id').value = "";
@@ -422,49 +422,35 @@
 
         const url = isEdit ? `/api/books/${id}` : '/api/books';
         const method = isEdit ? 'PUT' : 'POST';
-        
-        // CORRECCIÓN: Obtener el token de la Cookie XSRF-TOKEN
         const csrfToken = getCookie('XSRF-TOKEN');
 
         try {
             const res = await fetch(url, {
                 method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': csrfToken // Usamos X-XSRF-TOKEN para cookies
-                },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': csrfToken },
                 body: JSON.stringify(data)
             });
-
             if (res.ok) {
                 document.getElementById('admin-modal').classList.add('hidden');
                 loadLocalCatalog(); 
                 alert("Guardado correctamente");
-            } else {
-                alert("Error al guardar");
-            }
+            } else { alert("Error al guardar"); }
         } catch (error) { console.error(error); }
     }
 
     async function deleteBook(id) {
         if(!confirm("¿Borrar libro permanentemente?")) return;
         const csrfToken = getCookie('XSRF-TOKEN');
-        
         try {
             const res = await fetch(`/api/books/${id}`, {
                 method: 'DELETE',
-                headers: { 
-                    'X-XSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json' 
-                }
+                headers: { 'X-XSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
             });
             if (res.ok) loadLocalCatalog();
         } catch (e) { console.error(e); }
     }
 
-    // --- FUNCIONES ORIGINALES (AUXILIARES) ---
-
+    // --- FUNCIONES AUXILIARES ---
     function getBestCover(book) {
         if (book.cover_id) return `https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`;
         if (book.cover_i) return `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`;
@@ -474,18 +460,23 @@
     }
 
     function getBestAuthor(book) {
-        if (book.author) return book.author;
-        if (Array.isArray(book.author_name)) return book.author_name[0];
+        if (book.author && typeof book.author === 'string') return book.author;
+        if (book.author_name && Array.isArray(book.author_name) && book.author_name.length > 0) return book.author_name[0];
+        if (book.authors && Array.isArray(book.authors) && book.authors.length > 0) return book.authors[0].name;
         return 'Autor desconocido';
     }
 
     function getBestCategory(book) {
+        const select = document.getElementById('category-select');
+        if (select && select.value !== 'fiction' && select.selectedIndex >= 0) {
+            const text = select.options[select.selectedIndex].text;
+            return text.replace(/[^\w\s\u00C0-\u00FF]/g, "").trim();
+        }
         if (book.subject && Array.isArray(book.subject) && book.subject.length > 0) return book.subject[0];
         return 'General';
     }
 
-    // --- LOGICA DE CARRITO Y ARRASTRE ---
-
+    // --- CARRITO ---
     function empezarArrastre(event, index) {
         event.dataTransfer.setData('text/plain', index);
         event.dataTransfer.effectAllowed = "copy";
@@ -493,13 +484,8 @@
 
     const dropZone = document.getElementById('drop-zone');
     if(dropZone) {
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault(); 
-            dropZone.classList.add('border-blue-500', 'bg-blue-900/20');
-        });
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-blue-500', 'bg-blue-900/20');
-        });
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-500', 'bg-blue-900/20'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-blue-500', 'bg-blue-900/20'); });
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('border-blue-500', 'bg-blue-900/20');
@@ -514,11 +500,21 @@
     function prepararYAgregar(rawBook) {
         const isLocal = rawBook.id && rawBook.created_at; 
         
+        // 1. CALCULAMOS LA CATEGORÍA AQUÍ PARA GUARDARLA EN EL CARRITO
+        let catName = 'General';
+        if (isLocal) {
+            catName = (rawBook.category && rawBook.category.name) ? rawBook.category.name : 'General';
+        } else {
+            catName = getBestCategory(rawBook);
+        }
+
+        // 2. CREAMOS EL OBJETO CON LA CLAVE EXACTA QUE PIDE TU CONTROLADOR
         const bookForCart = {
             title: rawBook.title,
             author: isLocal ? rawBook.author : getBestAuthor(rawBook),
             cover: isLocal ? rawBook.cover : getBestCover(rawBook),
-            price: isLocal ? rawBook.price : 9.95
+            price: isLocal ? rawBook.price : 9.95,
+            suggested_category: catName // <--- ¡AQUÍ ESTÁ LA SOLUCIÓN! (Envía 'suggested_category')
         };
         addToCart(bookForCart);
     }
@@ -566,29 +562,19 @@
         renderCart();
     };
 
-    // --- CAMBIO CLAVE: Redirección HTML estática ---
     window.checkoutAll = function() {
         if(cart.length === 0) { alert("El carrito está vacío"); return; }
-        
         localStorage.setItem('carritoParaPagar', JSON.stringify(cart));
-        
-        // Ya no usamos Blade {{ route }}, sino enlace directo
         window.location.href = "/checkout"; 
     };
-
-    // --- MODALES Y SEARCH ---
 
     function openProductModal(index) {
         const book = currentBooks[index];
         const isLocal = book.created_at ? true : false;
-
         const cover = isLocal ? book.cover : getBestCover(book);
         const author = isLocal ? book.author : getBestAuthor(book);
-        const price = isLocal ? book.price : 9.95;
-
-        const imgEl = document.getElementById('modal-img');
-        imgEl.src = cover;
         
+        document.getElementById('modal-img').src = cover;
         document.getElementById('modal-title').innerText = book.title;
         document.getElementById('modal-author').innerText = author;
         
@@ -597,13 +583,10 @@
             prepararYAgregar(book);
             closeModal('product-modal');
         };
-        
         document.getElementById('product-modal').classList.remove('hidden');
     }
 
-    function closeModal(id) { 
-        document.getElementById(id).classList.add('hidden'); 
-    }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
     async function searchBooks() {
         const query = document.getElementById('api-search').value;
@@ -636,18 +619,9 @@
 
     async function logout() {
         if(!confirm("¿Cerrar sesión?")) return;
-        
         const csrfToken = getCookie('XSRF-TOKEN');
-
         try { 
-            await fetch('/logout', { 
-                method: 'POST', 
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': csrfToken
-                } 
-            }); 
+            await fetch('/logout', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': csrfToken } }); 
             localStorage.removeItem('myBooks');
         } catch (e) { console.error(e); } 
         finally { window.location.href = '/'; }
@@ -656,6 +630,7 @@
     window.onload = () => {
         loadUserProfile();
         searchByCategory();
+        loadCategoriesForAdmin(); 
     };
 </script>
 
