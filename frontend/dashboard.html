@@ -12,144 +12,153 @@
         /* Estilos Globales Dark Mode */
         body { background-color: #121214; color: #ffffff; font-family: 'Inter', sans-serif; }
         
-        /* Ajuste Main Content para Sidebar */
+        /* Ajuste Main Content para Sidebar Desktop */
         @media (min-width: 768px) { .main-content { margin-left: 260px; } }
         
-        /* --- NUEVO: PANTALLA DE CARGA CENTRADA --- */
-        #loading-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
-            z-index: 9999; /* Por encima de todo */
-            display: none; /* Oculto por defecto */
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(4px); /* Efecto borroso elegante */
-            flex-direction: column;
-            gap: 20px;
-        }
+        /* Foco visible para accesibilidad */
+        *:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
 
-        .loader-big {
-            width: 60px; /* Mucho más grande */
-            height: 60px;
-            border: 5px solid rgba(255,255,255,0.2);
-            border-top-color: #3b82f6; /* Azul brillante */
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
         
+        /* Loader */
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); flex-direction: column; gap: 20px; }
+        .loader-big { width: 60px; height: 60px; border: 5px solid rgba(255,255,255,0.2); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- TARJETA CON ANIMACIÓN REVEAL ON SCROLL --- */
-        .book-card { 
-            background-color: #1a1a1e; 
-            border-radius: 20px; 
-            overflow: hidden; 
-            border: 1px solid #27272a; 
-            display: flex; 
-            flex-direction: column; 
-            width: 100%; 
-            
-            /* Estado inicial invisible */
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.6s ease-out, transform 0.6s ease-out, box-shadow 0.3s, border-color 0.3s;
-        }
-
+        /* Tarjetas */
+        .book-card { background-color: #1a1a1e; border-radius: 20px; overflow: hidden; border: 1px solid #27272a; display: flex; flex-direction: column; width: 100%; opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease-out, transform 0.6s ease-out, box-shadow 0.3s, border-color 0.3s; }
         .book-card.visible { opacity: 1; transform: translateY(0); }
-
-        .book-card:hover { 
-            transform: translateY(-5px) !important; 
-            border-color: #3b82f6; 
-            box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3); 
-        }
+        .book-card:hover, .book-card:focus { transform: translateY(-5px) !important; border-color: #3b82f6; box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3); }
         
-        /* Selectores y Inputs */
-        .category-select { background: #1a1a1e; border: 1px solid #333; border-radius: 12px; color: white; outline: none; }
-        .category-select:focus { border-color: #3b82f6; }
-        
-        /* Scrollbar Carrito */
+        /* Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1e; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* --- ARREGLO SELECTOR CATEGORÍAS --- */
+        .category-select { 
+            background-color: #1a1a1e; 
+            border: 1px solid #374151; 
+            border-radius: 12px; 
+            color: white; 
+            outline: none;
+            appearance: none; /* Quita estilo nativo (flecha blanca fea) */
+            -webkit-appearance: none;
+        }
+        .category-select option { background-color: #1a1a1e; color: white; padding: 10px; } /* Fondo oscuro opciones */
+        .category-select optgroup { background-color: #1a1a1e; color: #9ca3af; }
+
+        /* --- ESTILOS MÓVILES NUEVOS --- */
+        /* Animación del carrito en móvil */
+        .cart-drawer { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 
-<body class="min-h-screen pb-20 md:pb-0 flex flex-col">
+<body class="min-h-screen pb-24 md:pb-0 flex flex-col">
+
+    <div class="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1a1a1e]/95 backdrop-blur border-b border-gray-800 z-40 flex items-center justify-between px-6 shadow-lg">
+        <div class="text-xl font-bold text-blue-500 flex items-center gap-2">
+            <i class="fas fa-bolt" aria-hidden="true"></i> eBookStore
+        </div>
+        <a href="/profile" class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center shadow-lg text-sm transform active:scale-95 transition" aria-label="Ir a mi perfil">
+            👤
+        </a>
+    </div>
 
     <aside class="hidden md:flex flex-col w-64 bg-[#1a1a1e] h-screen fixed left-0 top-0 border-r border-gray-800 p-6 z-40">
         <div class="text-2xl font-bold text-blue-500 mb-10 flex items-center gap-2">
-            <i class="fas fa-bolt"></i> eBookStore
+            <i class="fas fa-bolt" aria-hidden="true"></i> eBookStore
         </div>
         <nav class="space-y-4 flex-1">
             <a href="#" class="flex items-center gap-3 text-white bg-blue-600/10 p-3 rounded-xl border border-blue-600/20">
-                <i class="fas fa-shopping-bag w-5 text-blue-500"></i> Tienda
+                <i class="fas fa-shopping-bag w-5 text-blue-500" aria-hidden="true"></i> Tienda
             </a>
-            <a href="/books" class="flex items-center gap-3 text-gray-400 hover:text-white p-3 rounded-xl hover:bg-gray-800 transition">
-                <i class="fas fa-bookmark w-5"></i> Mis Libros
+            <a href="/books" class="flex items-center gap-3 text-gray-300 hover:text-white p-3 rounded-xl hover:bg-gray-800 transition">
+                <i class="fas fa-bookmark w-5" aria-hidden="true"></i> Mis Libros
             </a>
         </nav>
-
         <div class="mt-auto border-t border-gray-800 pt-6 space-y-4">
             <a href="/profile" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-800 transition cursor-pointer group">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold group-hover:scale-110 transition">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold group-hover:scale-110 transition" aria-hidden="true">
                     👤
                 </div>
                 <div>
                     <p id="sidebar-name" class="text-sm font-bold text-gray-200 group-hover:text-white">Cargando...</p>
                     <p class="text-[10px] text-gray-400 uppercase font-black group-hover:text-blue-400 transition">
-                        <i class="fas fa-cog mr-1"></i> Configuración
+                        <i class="fas fa-cog mr-1" aria-hidden="true"></i> Configuración
                     </p>
                 </div>
             </a>
             <button onclick="logout()" class="flex items-center gap-3 text-red-400 hover:text-red-300 p-3 w-full hover:bg-red-500/10 rounded-xl transition text-left">
-                <i class="fas fa-sign-out-alt"></i> Salir de la cuenta
+                <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Salir
             </button>
         </div>
     </aside>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a1e]/90 backdrop-blur-md border-t border-gray-800 px-6 py-3 flex justify-between items-center z-50 md:hidden">
-        <a href="#" class="text-blue-500 flex flex-col items-center gap-1"><i class="fas fa-shopping-bag text-xl"></i></a>
-        <a href="/books" class="text-gray-400 flex flex-col items-center gap-1"><i class="fas fa-bookmark text-xl"></i></a>
-        <button onclick="logout()" class="text-red-400 flex flex-col items-center gap-1"><i class="fas fa-sign-out-alt text-xl"></i></button>
+    <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a1e] border-t border-gray-800 px-2 py-3 flex justify-around items-center z-50 md:hidden safe-area-pb">
+        <a href="#" class="text-blue-500 flex flex-col items-center gap-1 w-16 group" aria-label="Tienda">
+            <i class="fas fa-shopping-bag text-xl group-active:scale-90 transition"></i>
+            <span class="text-[10px] font-bold">Tienda</span>
+        </a>
+        <a href="/books" class="text-gray-400 hover:text-white flex flex-col items-center gap-1 w-16 group" aria-label="Mis Libros">
+            <i class="fas fa-bookmark text-xl group-active:scale-90 transition"></i>
+            <span class="text-[10px] font-bold">Libros</span>
+        </a>
+        <button onclick="toggleCart()" class="text-gray-400 hover:text-white flex flex-col items-center gap-1 w-16 group relative" aria-label="Abrir carrito">
+            <div class="relative">
+                <i class="fas fa-shopping-cart text-xl group-active:scale-90 transition"></i>
+                <span id="mobile-cart-badge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#1a1a1e]">0</span>
+            </div>
+            <span class="text-[10px] font-bold">Carrito</span>
+        </button>
+        <a href="/profile" class="text-gray-400 hover:text-white flex flex-col items-center gap-1 w-16 group" aria-label="Mi Perfil">
+            <i class="fas fa-user text-xl group-active:scale-90 transition"></i>
+            <span class="text-[10px] font-bold">Perfil</span>
+        </a>
     </nav>
 
-    <div class="main-content">
-        <main id="main-content" class="container mx-auto px-6 max-w-6xl pb-10 pt-6">
+    <div class="main-content flex-1 pt-20 md:pt-6"> <main id="main-content" class="container mx-auto px-4 md:px-6 max-w-6xl pb-10">
             
             <header class="mb-8">
-                <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center justify-between mb-6">
                     <div>
                         <h1 class="text-2xl font-black">Hola, <span id="header-name" class="text-blue-500">...</span></h1>
                         <p class="text-xs text-gray-300 uppercase tracking-widest font-bold">Bienvenido de nuevo</p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-800 shadow-xl">
-                    <div class="md:col-span-1 h-full">
-                        <select id="category-select" onchange="searchByCategory()" 
-                                class="w-full category-select text-sm font-bold h-full px-4 py-3 custom-scrollbar">
-                            <option value="fiction">📚 Explorar todo</option>
-                            <optgroup label="Géneros">
-                                <option value="science_fiction">Ciencia Ficción 🚀</option>
-                                <option value="fantasy">Fantasía 🧙‍♂️</option>
-                                <option value="mystery">Misterio 🔍</option>
-                                <option value="horror">Terror 👻</option>
-                                <option value="romance">Romance ❤️</option>
-                                <option value="history">Historia 🏛️</option>
-                            </optgroup>
-                        </select>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-800 shadow-xl" role="search">
+                    <div class="md:col-span-1">
+                        <label for="category-select" class="sr-only">Categoría</label>
+                        <div class="relative">
+                            <select id="category-select" onchange="searchByCategory()" 
+                                    class="w-full category-select text-sm font-bold px-4 py-3 h-12 md:h-auto pr-10">
+                                <option value="fiction">📚 Explorar todo</option>
+                                <optgroup label="Géneros">
+                                    <option value="science_fiction">Ciencia Ficción 🚀</option>
+                                    <option value="fantasy">Fantasía 🧙‍♂️</option>
+                                    <option value="mystery">Misterio 🔍</option>
+                                    <option value="horror">Terror 👻</option>
+                                    <option value="romance">Romance ❤️</option>
+                                    <option value="history">Historia 🏛️</option>
+                                </optgroup>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="md:col-span-3 flex gap-2">
                         <div class="relative flex-1">
-                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" id="api-search" placeholder="Buscar libro, autor o ISBN..." 
-                                   class="w-full bg-[#121214] border border-gray-700 rounded-xl py-3 pl-12 pr-4 focus:border-blue-500 outline-none transition text-white">
+                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
+                            <label for="api-search" class="sr-only">Buscador</label>
+                            <input type="text" id="api-search" placeholder="Buscar libro..." 
+                                   class="w-full bg-[#121214] border border-gray-700 rounded-xl py-3 pl-12 pr-4 focus:border-blue-500 outline-none transition text-white h-12">
                         </div>
-                        <button onclick="searchBooks()" class="bg-blue-600 hover:bg-blue-700 px-6 rounded-xl font-bold transition flex items-center gap-2 min-w-[100px] justify-center">
-                            <span id="btn-text">Buscar</span>
+                        <button onclick="searchBooks()" class="bg-blue-600 hover:bg-blue-700 px-4 md:px-6 rounded-xl font-bold transition flex items-center justify-center text-white h-12">
+                            <i class="fas fa-search md:hidden"></i>
+                            <span class="hidden md:inline">Buscar</span>
                         </button>
                     </div>
                 </div>
@@ -163,47 +172,69 @@
                     </div>
                     <div class="flex gap-3 w-full md:w-auto">
                         <button onclick="loadLocalCatalog()" class="flex-1 md:flex-none bg-[#1a1a1e] hover:bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
-                            <i class="fas fa-database text-blue-500"></i> Mi Base de Datos
+                            <i class="fas fa-database text-blue-500" aria-hidden="true"></i> <span class="hidden sm:inline">Base Datos</span>
                         </button>
                         <button onclick="openAdminModal()" class="flex-1 md:flex-none bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
-                            <i class="fas fa-plus"></i> Nuevo Libro
+                            <i class="fas fa-plus" aria-hidden="true"></i> <span class="hidden sm:inline">Nuevo</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <h2 id="results-title" class="text-xl font-bold mb-6 flex items-center gap-2">
-                <i class="fas fa-sparkles text-yellow-500"></i> Libros Destacados
-            </h2>
-            
-            <div id="api-results-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            </div>
+            <section aria-live="polite">
+                <h2 id="results-title" class="text-xl font-bold mb-6 flex items-center gap-2">
+                    <i class="fas fa-sparkles text-yellow-500" aria-hidden="true"></i> Libros Destacados
+                </h2>
+                <div id="api-results-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                    </div>
+            </section>
         </main>
     </div>
 
-    <div id="drop-zone" class="fixed right-4 top-24 bottom-4 w-80 bg-[#1a1a1e] border-2 border-dashed border-gray-700 rounded-2xl p-4 flex flex-col shadow-2xl z-30 transition-colors hidden md:flex">
-        <div class="text-center border-b border-gray-700 pb-3 mb-3">
-            <i class="fas fa-shopping-cart text-3xl text-blue-500 mb-2"></i>
+    <aside id="drop-zone" class="cart-drawer fixed inset-y-0 right-0 w-full md:w-80 md:h-auto md:top-24 md:bottom-4 md:right-4 bg-[#1a1a1e] md:border-2 border-l border-gray-800 md:border-dashed md:border-gray-700 md:rounded-2xl p-4 flex flex-col shadow-2xl z-[60] transform translate-x-full md:translate-x-0" aria-label="Carrito de compra">
+        
+        <div class="flex justify-between items-center md:hidden border-b border-gray-800 pb-4 mb-4 pt-2">
+            <h3 class="font-bold text-white text-lg flex items-center gap-2">
+                <i class="fas fa-shopping-cart text-blue-500"></i> Tu Carrito
+            </h3>
+            <button onclick="toggleCart()" class="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="text-center border-b border-gray-700 pb-3 mb-3 hidden md:block">
+            <i class="fas fa-shopping-cart text-3xl text-blue-500 mb-2" aria-hidden="true"></i>
             <h3 class="font-bold text-white">Carrito de Compra</h3>
             <p id="empty-msg" class="text-xs text-gray-400 mt-1">Arrastra libros aquí para añadir</p>
         </div>
+
         <div id="cart-list" class="flex-1 overflow-y-auto space-y-2 hidden custom-scrollbar pb-2"></div>
-        <div id="cart-actions" class="mt-auto hidden border-t border-gray-700 pt-3">
+        
+        <div id="empty-msg-mobile" class="md:hidden flex-1 flex flex-col items-center justify-center text-gray-500 opacity-50">
+            <i class="fas fa-shopping-basket text-4xl mb-2"></i>
+            <p>Tu carrito está vacío</p>
+        </div>
+
+        <div id="cart-actions" class="mt-auto hidden border-t border-gray-700 pt-3 pb-safe">
             <div class="flex justify-between text-sm font-bold mb-3 px-1">
                 <span>Total:</span>
                 <span id="cart-total" class="text-green-400">0.00€</span>
             </div>
             <button onclick="checkoutAll()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-green-600/20">
-                <i class="fas fa-credit-card mr-2"></i> Pagar Todo
+                <i class="fas fa-credit-card mr-2" aria-hidden="true"></i> Pagar Todo
             </button>
         </div>
-    </div>
+    </aside>
 
-    <div id="product-modal" class="fixed inset-0 z-[60] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="product-modal" class="fixed inset-0 z-[70] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" aria-modal="true" role="dialog" aria-labelledby="modal-title">
         <div class="bg-[#1a1a1e] border border-gray-700 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-2xl relative flex flex-col md:flex-row animate-[fadeIn_0.3s]">
-            <button onclick="closeModal('product-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-white z-10 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-times"></i></button>
-            <div class="md:w-2/5 bg-gray-800 relative group"><img id="modal-img" src="" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition"></div>
-            <div class="md:w-3/5 p-8 flex flex-col">
+            <button onclick="closeModal('product-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-white z-10 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center" aria-label="Cerrar">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+            <div class="md:w-2/5 h-64 md:h-auto bg-gray-800 relative group">
+                <img id="modal-img" src="" alt="" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition">
+            </div>
+            <div class="md:w-3/5 p-6 md:p-8 flex flex-col">
                 <span class="text-blue-500 font-bold text-[10px] uppercase tracking-widest mb-2">Libro Seleccionado</span>
                 <h2 id="modal-title" class="text-2xl font-black mb-1 text-white leading-tight">Título</h2>
                 <p id="modal-author" class="text-gray-400 text-sm mb-6 font-medium italic"></p>
@@ -217,27 +248,49 @@
         </div>
     </div>
 
-    <div id="admin-modal" class="fixed inset-0 z-[80] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-[#1a1a1e] w-full max-w-lg rounded-3xl border border-yellow-600/30 shadow-2xl p-8 relative animate-[fadeIn_0.3s]">
-            <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
+    <div id="admin-modal" class="fixed inset-0 z-[80] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4" aria-modal="true" role="dialog">
+        <div class="bg-[#1a1a1e] w-full max-w-lg rounded-3xl border border-yellow-600/30 shadow-2xl p-6 md:p-8 relative animate-[fadeIn_0.3s] max-h-[90vh] overflow-y-auto">
+            <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition" aria-label="Cerrar">
+                <i class="fas fa-times text-xl" aria-hidden="true"></i>
+            </button>
             <h2 id="admin-modal-title" class="text-2xl font-black text-white mb-6 border-l-4 border-yellow-500 pl-4">Gestión de Libro</h2>
+            
             <form id="admin-form" onsubmit="handleSaveBook(event)" class="space-y-4">
                 <input type="hidden" id="edit-book-id">
-                <div><label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Título</label><input type="text" id="edit-title" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition"></div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Autor</label><input type="text" id="edit-author" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition"></div>
-                    <div><label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Precio (€)</label><input type="number" step="0.01" id="edit-price" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition"></div>
+                <div>
+                    <label for="edit-title" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Título</label>
+                    <input type="text" id="edit-title" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Categoría</label><select id="edit-category" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition"><option value="">Cargando...</option></select></div>
-                    <div><label class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">URL Portada</label><input type="url" id="edit-cover" placeholder="http://..." required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition"></div>
+                    <div>
+                        <label for="edit-author" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Autor</label>
+                        <input type="text" id="edit-author" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label for="edit-price" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Precio (€)</label>
+                        <input type="number" step="0.01" id="edit-price" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                    </div>
                 </div>
-                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-4 rounded-xl shadow-lg shadow-yellow-600/20 mt-6 transition transform hover:scale-[1.02]"><i class="fas fa-save mr-2"></i> Guardar Cambios</button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="edit-category" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Categoría</label>
+                        <select id="edit-category" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                            <option value="">Cargando...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-cover" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">URL Portada</label>
+                        <input type="url" id="edit-cover" placeholder="http://..." required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-4 rounded-xl shadow-lg shadow-yellow-600/20 mt-6 transition">
+                    <i class="fas fa-save mr-2" aria-hidden="true"></i> Guardar Cambios
+                </button>
             </form>
         </div>
     </div>
 
-    <div id="loading-overlay">
+    <div id="loading-overlay" aria-live="assertive">
         <div class="loader-big"></div>
         <p class="text-blue-400 font-bold tracking-widest animate-pulse">BUSCANDO LIBROS...</p>
     </div>
