@@ -46,7 +46,7 @@
             <h1 class="text-xl font-bold text-white flex items-center gap-2">
                 <i class="fas fa-columns text-blue-400" aria-hidden="true"></i> Mi Tablero de Lectura
             </h1>
-            <a href="{{ url('/dashboard.html') }}" class="text-sm text-gray-300 hover:text-white transition flex items-center gap-2">
+            <a href="{{ url('/dashboard.html') }}" class="text-sm text-gray-200 hover:text-white transition flex items-center gap-2">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al Dashboard
             </a>
         </div>
@@ -58,7 +58,7 @@
 
             <div class="flex flex-col h-full">
                 <div class="bg-blue-900/20 border-t-4 border-blue-500 p-3 rounded-t-lg flex justify-between items-center">
-                    <h2 class="font-bold text-blue-100 uppercase tracking-wider text-sm flex items-center">
+                    <h2 class="font-bold text-white uppercase tracking-wider text-sm flex items-center">
                         <i class="fas fa-hourglass-half mr-2" aria-hidden="true"></i> Por Leer / Leyendo
                     </h2>
                     <span id="count-pending" class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-mono">
@@ -83,6 +83,7 @@
                             <div class="flex-shrink-0">
                                 <img src="{{ $book->cover ?? 'https://via.placeholder.com/100x150?text=No+Cover' }}" 
                                      alt="Portada de {{ $book->title }}" 
+                                     loading="lazy" width="80" height="112"
                                      class="w-20 h-28 object-cover rounded shadow-sm">
                             </div>
 
@@ -90,12 +91,12 @@
                                 <div>
                                     <div class="flex justify-between items-start mb-1">
                                         <h3 class="font-bold text-base text-gray-900 leading-tight">{{ $book->title }}</h3>
-                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 uppercase tracking-wide">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-200 text-blue-950 uppercase tracking-wide">
                                             {{ $book->pivot->status ?? 'Pendiente' }}
                                         </span>
                                     </div>
                                     
-                                    <p class="text-gray-600 text-xs mb-2">
+                                    <p class="text-gray-700 text-xs mb-2">
                                         @if($book->authors && $book->authors->count() > 0)
                                             {{ $book->authors->pluck('name')->join(', ') }}
                                         @else
@@ -106,7 +107,7 @@
 
                                 <div class="flex justify-end gap-2 mt-auto">
                                     <button onclick="openReader('{{ $book->title }}', 'path/to/pdf.pdf')" 
-                                            class="text-blue-600 hover:text-blue-800 text-sm font-bold flex items-center gap-1 transition p-1 rounded hover:bg-blue-50"
+                                            class="text-blue-700 hover:text-blue-900 text-sm font-bold flex items-center gap-1 transition p-1 rounded hover:bg-blue-50"
                                             aria-label="Leer {{ $book->title }}">
                                         <i class="fas fa-book-open" aria-hidden="true"></i> Leer
                                     </button>
@@ -121,7 +122,7 @@
 
             <div class="flex flex-col h-full">
                 <div class="bg-green-900/20 border-t-4 border-green-500 p-3 rounded-t-lg flex justify-between items-center">
-                    <h2 class="font-bold text-green-100 uppercase tracking-wider text-sm flex items-center">
+                    <h2 class="font-bold text-white uppercase tracking-wider text-sm flex items-center">
                         <i class="fas fa-check-circle mr-2" aria-hidden="true"></i> Terminados
                     </h2>
                     <span id="count-completed" class="bg-green-600 text-white text-xs px-2 py-1 rounded-full font-mono">
@@ -146,6 +147,7 @@
                             <div class="flex-shrink-0">
                                 <img src="{{ $book->cover ?? 'https://via.placeholder.com/100x150?text=No+Cover' }}" 
                                      alt="Portada de {{ $book->title }}" 
+                                     loading="lazy" width="80" height="112"
                                      class="w-20 h-28 object-cover rounded shadow-sm grayscale hover:grayscale-0 transition">
                             </div>
 
@@ -153,18 +155,18 @@
                                 <div>
                                     <div class="flex justify-between items-start mb-1">
                                         <h3 class="font-bold text-base text-gray-900 leading-tight">{{ $book->title }}</h3>
-                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-green-100 text-green-800 uppercase tracking-wide">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-green-200 text-green-950 uppercase tracking-wide">
                                             Completado
                                         </span>
                                     </div>
                                     
-                                    <p class="text-gray-600 text-xs mb-2">
+                                    <p class="text-gray-700 text-xs mb-2">
                                         {{ $book->authors->pluck('name')->join(', ') }}
                                     </p>
                                 </div>
 
                                 <div class="flex justify-end gap-2 mt-auto">
-                                    <span class="text-green-600 text-sm font-bold flex items-center gap-1 cursor-default">
+                                    <span class="text-green-700 text-sm font-bold flex items-center gap-1 cursor-default">
                                         <i class="fas fa-check" aria-hidden="true"></i> Leído
                                     </span>
                                 </div>
@@ -224,21 +226,23 @@
         if(card && destination) {
             destination.appendChild(card);
             
-            // Actualizar estilos visuales según columna
+            // Actualizar estilos visuales según columna (CORREGIDOS PARA CONTRASTE EN JS)
             const badge = card.querySelector('span');
             
             if(newStatus === 'completed') {
                 card.classList.remove('border-blue-500');
                 card.classList.add('border-green-500', 'opacity-75');
                 if(badge) {
-                    badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-green-100 text-green-800 uppercase tracking-wide';
+                    // Actualizado a green-200/green-950
+                    badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-green-200 text-green-950 uppercase tracking-wide';
                     badge.innerText = 'Completado';
                 }
             } else {
                 card.classList.remove('border-green-500', 'opacity-75');
                 card.classList.add('border-blue-500');
                 if(badge) {
-                    badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 uppercase tracking-wide';
+                    // Actualizado a blue-200/blue-950
+                    badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-blue-200 text-blue-950 uppercase tracking-wide';
                     badge.innerText = 'Pendiente';
                 }
             }
@@ -248,9 +252,8 @@
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         try {
-            // PETICIÓN AJAX CORREGIDA (Sin /api si tu ruta web no lo tiene)
             await fetch(`/books/${bookId}/status`, { 
-                method: 'POST', // Usamos POST con _method: PATCH para evitar problemas con algunos servers
+                method: 'POST', 
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
