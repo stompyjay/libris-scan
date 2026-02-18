@@ -5,145 +5,209 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="">
     <title>Dashboard - eBookStore</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+
     <style>
-        /* Estilos Globales Dark Mode */
+        /* --- ESTILOS GENERALES --- */
         body { background-color: #121214; color: #ffffff; font-family: 'Inter', sans-serif; }
         
-        /* Ajuste Main Content para Sidebar Desktop */
         @media (min-width: 768px) { .main-content { margin-left: 260px; } }
         
-        /* Foco visible para accesibilidad */
-        *:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+        *:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; } /* Azul más claro para el foco */
 
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
         
-        /* Loader */
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); flex-direction: column; gap: 20px; }
         .loader-big { width: 60px; height: 60px; border: 5px solid rgba(255,255,255,0.2); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Tarjetas */
         .book-card { background-color: #1a1a1e; border-radius: 20px; overflow: hidden; border: 1px solid #27272a; display: flex; flex-direction: column; width: 100%; opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease-out, transform 0.6s ease-out, box-shadow 0.3s, border-color 0.3s; }
         .book-card.visible { opacity: 1; transform: translateY(0); }
         .book-card:hover, .book-card:focus { transform: translateY(-5px) !important; border-color: #3b82f6; box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3); }
         
-        /* Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1e; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; } /* Thumb más claro para contraste */
 
-        /* --- ARREGLO SELECTOR CATEGORÍAS --- */
+        /* Estilo del Select Nativo */
         .category-select { 
             background-color: #1a1a1e; 
-            border: 1px solid #374151; 
+            border: 1px solid #4b5563; /* Borde más claro */
             border-radius: 12px; 
             color: white; 
             outline: none;
-            appearance: none; /* Quita estilo nativo (flecha blanca fea) */
+            appearance: none;
             -webkit-appearance: none;
+            width: 100%;
+            padding: 12px 16px;
+            font-weight: bold;
+            font-size: 0.875rem;
+            cursor: pointer;
         }
-        .category-select option { background-color: #1a1a1e; color: white; padding: 10px; } /* Fondo oscuro opciones */
-        .category-select optgroup { background-color: #1a1a1e; color: #9ca3af; }
+        .category-select:focus { border-color: #60a5fa; }
+        .category-select option { background-color: #1a1a1e; color: white; padding: 10px; }
+        /* Optgroup aclarado para pasar contraste */
+        .category-select optgroup { background-color: #1a1a1e; color: #d1d5db; font-style: italic; font-weight: bold; } 
 
-        /* --- ESTILOS MÓVILES NUEVOS --- */
-        /* Animación del carrito en móvil */
         .cart-drawer { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* --- ARREGLO WAVE Y JQUERY UI (MODO OSCURO) --- */
+        .ui-widget-content { background: #1a1a1e !important; border: 1px solid #4b5563 !important; color: white !important; }
+        .ui-widget-header { background: #121214 !important; border: none !important; border-bottom: 1px solid #4b5563 !important; }
+        
+        .ui-tabs .ui-tabs-nav { background: transparent; padding: 0; }
+        .ui-tabs .ui-tabs-nav li { background: #27272a; border-color: #4b5563; border-radius: 8px 8px 0 0; margin-right: 4px; }
+        
+        /* TEXTO PESTAÑA INACTIVA: Blanco Puro (AAA) */
+        .ui-tabs .ui-tabs-nav li a { color: #ffffff !important; font-weight: bold; padding: 10px 15px; width: 100%; display: block; }
+        .ui-tabs .ui-tabs-nav li a:hover { background-color: #374151; }
+
+        /* Pestaña Activa */
+        .ui-tabs .ui-tabs-nav li.ui-tabs-active { background: #2563eb !important; border-color: #2563eb !important; }
+        .ui-tabs .ui-tabs-nav li.ui-tabs-active a { color: white !important; }
+        
+        .ui-dialog-title { color: #ffffff !important; font-weight: bold; }
+        .ui-tabs .ui-tabs-panel { padding: 20px !important; }
+        .ui-dialog-titlebar-close { display: none; }
     </style>
 </head>
 
 <body class="min-h-screen pb-24 md:pb-0 flex flex-col">
 
-    <div class="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1a1a1e]/95 backdrop-blur border-b border-gray-800 z-40 flex items-center justify-between px-6 shadow-lg">
-        <div class="text-xl font-bold text-blue-500 flex items-center gap-2">
+    <div class="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1a1a1e]/95 backdrop-blur border-b border-gray-700 z-40 flex items-center justify-between px-6 shadow-lg">
+        <div class="text-xl font-bold text-blue-400 flex items-center gap-2">
             <i class="fas fa-bolt" aria-hidden="true"></i> eBookStore
         </div>
-        <a href="/profile" class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center shadow-lg text-sm transform active:scale-95 transition" aria-label="Ir a mi perfil">
-            👤
-        </a>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="openVideoModal()" class="w-10 h-10 rounded-full bg-blue-600/20 text-blue-300 flex items-center justify-center active:scale-95 transition border border-blue-500/30" aria-label="Ver video tutorial">
+                <i class="fas fa-play text-xs"></i>
+            </button>
+
+            <button id="btn-open-help-mobile" class="w-10 h-10 rounded-full bg-purple-600/20 text-purple-300 flex items-center justify-center active:scale-95 transition border border-purple-500/30" aria-label="Abrir centro de ayuda">
+                <i class="fas fa-question text-xs"></i>
+            </button>
+
+            <a href="/profile" class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center shadow-lg text-sm transform active:scale-95 transition text-white" aria-label="Ir a mi perfil">
+                👤
+            </a>
+        </div>
     </div>
 
-    <aside class="hidden md:flex flex-col w-64 bg-[#1a1a1e] h-screen fixed left-0 top-0 border-r border-gray-800 p-6 z-40">
-        <div class="text-2xl font-bold text-blue-500 mb-10 flex items-center gap-2">
+    <aside class="hidden md:flex flex-col w-64 bg-[#1a1a1e] h-screen fixed left-0 top-0 border-r border-gray-700 p-6 z-40">
+        <div class="text-2xl font-bold text-blue-400 mb-10 flex items-center gap-2">
             <i class="fas fa-bolt" aria-hidden="true"></i> eBookStore
         </div>
         <nav class="space-y-4 flex-1">
-            <a href="#" class="flex items-center gap-3 text-white bg-blue-600/10 p-3 rounded-xl border border-blue-600/20">
-                <i class="fas fa-shopping-bag w-5 text-blue-500" aria-hidden="true"></i> Tienda
+            <a href="#" class="flex items-center gap-3 text-white bg-blue-600/20 p-3 rounded-xl border border-blue-500/30">
+                <i class="fas fa-shopping-bag w-5 text-blue-400" aria-hidden="true"></i> Tienda
             </a>
             <a href="/books" class="flex items-center gap-3 text-gray-300 hover:text-white p-3 rounded-xl hover:bg-gray-800 transition">
                 <i class="fas fa-bookmark w-5" aria-hidden="true"></i> Mis Libros
             </a>
         </nav>
-        <div class="mt-auto border-t border-gray-800 pt-6 space-y-4">
+        <div class="mt-auto border-t border-gray-700 pt-6 space-y-4">
             <a href="/profile" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-800 transition cursor-pointer group">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold group-hover:scale-110 transition" aria-hidden="true">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center font-bold group-hover:scale-110 transition text-white" aria-hidden="true">
                     👤
                 </div>
                 <div>
-                    <p id="sidebar-name" class="text-sm font-bold text-gray-200 group-hover:text-white">Cargando...</p>
-                    <p class="text-[10px] text-gray-400 uppercase font-black group-hover:text-blue-400 transition">
+                    <p id="sidebar-name" class="text-sm font-bold text-white group-hover:text-blue-300">Cargando...</p>
+                    <p class="text-[10px] text-gray-300 uppercase font-black group-hover:text-blue-300 transition">
                         <i class="fas fa-cog mr-1" aria-hidden="true"></i> Configuración
                     </p>
                 </div>
             </a>
-            <button onclick="logout()" class="flex items-center gap-3 text-red-400 hover:text-red-300 p-3 w-full hover:bg-red-500/10 rounded-xl transition text-left">
+            
+            <button onclick="openVideoModal()" class="flex items-center gap-3 text-blue-300 hover:text-white p-3 w-full hover:bg-blue-500/20 rounded-xl transition text-left mb-2">
+                <i class="fas fa-play-circle" aria-hidden="true"></i> Ver Tutorial
+            </button>
+
+            <button id="btn-open-help" class="flex items-center gap-3 text-purple-300 hover:text-white p-3 w-full hover:bg-purple-500/20 rounded-xl transition text-left mb-2">
+                <i class="fas fa-question-circle" aria-hidden="true"></i> Ayuda y Novedades
+            </button>
+
+            <button onclick="logout()" class="flex items-center gap-3 text-red-300 hover:text-white p-3 w-full hover:bg-red-500/20 rounded-xl transition text-left">
                 <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Salir
             </button>
         </div>
     </aside>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a1e] border-t border-gray-800 px-2 py-3 flex justify-around items-center z-50 md:hidden safe-area-pb">
-        <a href="#" class="text-blue-500 flex flex-col items-center gap-1 w-16 group" aria-label="Tienda">
+    <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a1e] border-t border-gray-700 px-2 py-3 flex justify-around items-center z-50 md:hidden safe-area-pb">
+        <a href="#" class="text-blue-400 flex flex-col items-center gap-1 w-16 group" aria-label="Tienda">
             <i class="fas fa-shopping-bag text-xl group-active:scale-90 transition"></i>
             <span class="text-[10px] font-bold">Tienda</span>
         </a>
-        <a href="/books" class="text-gray-400 hover:text-white flex flex-col items-center gap-1 w-16 group" aria-label="Mis Libros">
+        <a href="/books" class="text-gray-300 hover:text-white flex flex-col items-center gap-1 w-16 group" aria-label="Mis Libros">
             <i class="fas fa-bookmark text-xl group-active:scale-90 transition"></i>
             <span class="text-[10px] font-bold">Libros</span>
         </a>
-        <button onclick="toggleCart()" class="text-gray-400 hover:text-white flex flex-col items-center gap-1 w-16 group relative" aria-label="Abrir carrito">
+        <button onclick="toggleCart()" class="text-gray-300 hover:text-white flex flex-col items-center gap-1 w-16 group relative" aria-label="Abrir carrito">
             <div class="relative">
                 <i class="fas fa-shopping-cart text-xl group-active:scale-90 transition"></i>
-                <span id="mobile-cart-badge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#1a1a1e]">0</span>
+                <span id="mobile-cart-badge" class="hidden absolute -top-2 -right-2 bg-red-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#1a1a1e]">0</span>
             </div>
             <span class="text-[10px] font-bold">Carrito</span>
         </button>
-        <a href="/profile" class="text-gray-400 hover:text-white flex flex-col items-center gap-1 w-16 group" aria-label="Mi Perfil">
+        <a href="/profile" class="text-gray-300 hover:text-white flex flex-col items-center gap-1 w-16 group" aria-label="Mi Perfil">
             <i class="fas fa-user text-xl group-active:scale-90 transition"></i>
             <span class="text-[10px] font-bold">Perfil</span>
         </a>
     </nav>
 
-    <div class="main-content flex-1 pt-20 md:pt-6"> <main id="main-content" class="container mx-auto px-4 md:px-6 max-w-6xl pb-10">
+    <div class="main-content flex-1 pt-20 md:pt-6"> 
+        <main id="main-content" class="container mx-auto px-4 md:px-6 max-w-6xl pb-10">
             
             <header class="mb-8">
                 <div class="flex items-center justify-between mb-6">
                     <div>
-                        <h1 class="text-2xl font-black">Hola, <span id="header-name" class="text-blue-500">...</span></h1>
-                        <p class="text-xs text-gray-300 uppercase tracking-widest font-bold">Bienvenido de nuevo</p>
+                        <h1 class="text-2xl font-black">Hola, <span id="header-name" class="text-blue-400">...</span></h1>
+                        <p class="text-xs text-gray-200 uppercase tracking-widest font-bold">Bienvenido de nuevo</p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-800 shadow-xl" role="search">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#1a1a1e] p-4 rounded-[2rem] border border-gray-700 shadow-xl" role="search">
                     <div class="md:col-span-1">
                         <label for="category-select" class="sr-only">Categoría</label>
                         <div class="relative">
-                            <select id="category-select" onchange="searchByCategory()" 
-                                    class="w-full category-select text-sm font-bold px-4 py-3 h-12 md:h-auto pr-10">
-                                <option value="fiction">📚 Explorar todo</option>
-                                <optgroup label="Géneros">
+                            <select id="category-select" onchange="searchByCategory()" class="category-select">
+                                <option value="fiction" selected>📚 Explorar todo</option>
+                                
+                                <optgroup label="Ficción Popular">
                                     <option value="science_fiction">Ciencia Ficción 🚀</option>
                                     <option value="fantasy">Fantasía 🧙‍♂️</option>
-                                    <option value="mystery">Misterio 🔍</option>
-                                    <option value="horror">Terror 👻</option>
+                                    <option value="thriller">Thriller & Suspense 🔪</option>
+                                    <option value="mystery">Misterio & Detectives 🔍</option>
+                                    <option value="horror">Terror & Miedo 👻</option>
                                     <option value="romance">Romance ❤️</option>
+                                    <option value="young_adult">Juvenil (Young Adult) 🛹</option>
+                                </optgroup>
+
+                                <optgroup label="No Ficción / Cultura">
                                     <option value="history">Historia 🏛️</option>
+                                    <option value="biography">Biografías 👤</option>
+                                    <option value="art">Arte & Diseño 🎨</option>
+                                    <option value="cooking">Cocina & Comida 🍳</option>
+                                    <option value="travel">Viajes ✈️</option>
+                                    <option value="health">Salud & Bienestar 🌿</option>
+                                    <option value="business">Negocios & Dinero 💼</option>
+                                </optgroup>
+                                
+                                <optgroup label="Ciencia y Tecnología">
+                                    <option value="science">Ciencia General 🔬</option>
+                                    <option value="programming">Programación 💻</option>
+                                    <option value="psychology">Psicología 🧠</option>
                                 </optgroup>
                             </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                            
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-300">
                                 <i class="fas fa-chevron-down text-xs"></i>
                             </div>
                         </div>
@@ -154,7 +218,7 @@
                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                             <label for="api-search" class="sr-only">Buscador</label>
                             <input type="text" id="api-search" placeholder="Buscar libro..." 
-                                   class="w-full bg-[#121214] border border-gray-700 rounded-xl py-3 pl-12 pr-4 focus:border-blue-500 outline-none transition text-white h-12">
+                                   class="w-full bg-[#121214] border border-gray-600 rounded-xl py-3 pl-12 pr-4 focus:border-blue-500 outline-none transition text-white h-12 placeholder-gray-400">
                         </div>
                         <button onclick="searchBooks()" aria-label="Buscar libros" class="bg-blue-600 hover:bg-blue-700 px-4 md:px-6 rounded-xl font-bold transition flex items-center justify-center text-white h-12">
                             <i class="fas fa-search md:hidden" aria-hidden="true"></i>
@@ -165,16 +229,16 @@
             </header>
 
             <div id="admin-toolbar" class="hidden mb-8 animate-[fadeIn_0.5s]">
-                <div class="bg-yellow-900/20 border border-yellow-600/30 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="bg-yellow-900/30 border border-yellow-600/50 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center gap-3">
-                        <div class="bg-yellow-600 text-black text-xs font-black px-2 py-1 rounded">ADMIN</div>
-                        <p class="text-sm text-yellow-200 font-medium">Panel de Control</p>
+                        <div class="bg-yellow-500 text-black text-xs font-black px-2 py-1 rounded">ADMIN</div>
+                        <p class="text-sm text-yellow-100 font-medium">Panel de Control</p>
                     </div>
                     <div class="flex gap-3 w-full md:w-auto">
                         <button onclick="loadLocalCatalog()" class="flex-1 md:flex-none bg-[#1a1a1e] hover:bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
-                            <i class="fas fa-database text-blue-500" aria-hidden="true"></i> <span class="hidden sm:inline">Base Datos</span>
+                            <i class="fas fa-database text-blue-400" aria-hidden="true"></i> <span class="hidden sm:inline">Base Datos</span>
                         </button>
-                        <button onclick="openAdminModal()" class="flex-1 md:flex-none bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
+                        <button onclick="openAdminModal()" class="flex-1 md:flex-none bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
                             <i class="fas fa-plus" aria-hidden="true"></i> <span class="hidden sm:inline">Nuevo</span>
                         </button>
                     </div>
@@ -182,39 +246,117 @@
             </div>
 
             <section aria-live="polite">
-                <h2 id="results-title" class="text-xl font-bold mb-6 flex items-center gap-2">
-                    <i class="fas fa-sparkles text-yellow-500" aria-hidden="true"></i> Libros Destacados
+                <h2 id="results-title" class="text-xl font-bold mb-6 flex items-center gap-2 text-white">
+                    <i class="fas fa-sparkles text-yellow-400" aria-hidden="true"></i> Libros Destacados
                 </h2>
                 <div id="api-results-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                     </div>
             </section>
+
+            <footer class="bg-[#0f0f12] border-t border-gray-800 pt-12 pb-24 md:pb-8 text-gray-300 text-sm">
+                <div class="container mx-auto px-6 max-w-6xl">
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-center border-b border-gray-800 pb-8 mb-8 gap-6">
+                        <div class="flex gap-4">
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition duration-300 text-white" aria-label="Facebook">
+                                <i class="fab fa-facebook-f text-lg"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-black hover:text-white transition duration-300 text-white" aria-label="X (Twitter)">
+                                <i class="fab fa-x-twitter text-lg"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-pink-600 hover:text-white transition duration-300 text-white" aria-label="Instagram">
+                                <i class="fab fa-instagram text-lg"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-red-600 hover:text-white transition duration-300 text-white" aria-label="YouTube">
+                                <i class="fab fa-youtube text-lg"></i>
+                            </a>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-white text-lg">Excelente</span>
+                            <div class="flex text-green-400 text-xl">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <span class="text-xs text-gray-400 ml-1">4.8/5 en Trustpilot</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+                        <div>
+                            <h3 class="text-white font-bold mb-4 text-base">eBookStore</h3>
+                            <ul class="space-y-2">
+                                <li><a href="#" class="hover:text-blue-400 transition">Quiénes somos</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Trabaja con nosotros</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Nuestras librerías</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">eBookStore Internacional</a></li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-white font-bold mb-4 text-base">Ayuda</h3>
+                            <ul class="space-y-2">
+                                <li><button onclick="$('#help-dialog').dialog('open')" class="hover:text-blue-400 transition text-left">Centro de Ayuda</button></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Estado de tu pedido</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Devoluciones</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Métodos de pago</a></li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h3 class="text-white font-bold mb-4 text-base">Servicios</h3>
+                            <ul class="space-y-2">
+                                <li><a href="#" class="hover:text-blue-400 transition">eBookStore Plus+</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Vende tus libros</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Empresas e Instituciones</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Tarjeta Regalo</a></li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h3 class="text-white font-bold mb-4 text-base">Legal</h3>
+                            <ul class="space-y-2">
+                                <li><a href="#" class="hover:text-blue-400 transition">Condiciones de uso</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Política de privacidad</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Política de cookies</a></li>
+                                <li><a href="#" class="hover:text-blue-400 transition">Configurar cookies</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <p class="text-xs text-gray-400">&copy; 2026 eBookStore S.L. Todos los derechos reservados.</p>
+                        <div class="flex gap-4">
+                            <i class="fab fa-cc-visa text-2xl text-gray-300"></i>
+                            <i class="fab fa-cc-mastercard text-2xl text-gray-300"></i>
+                            <i class="fab fa-cc-paypal text-2xl text-gray-300"></i>
+                            <i class="fab fa-apple-pay text-2xl text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+
         </main>
     </div>
 
-    <aside id="drop-zone" class="cart-drawer fixed inset-y-0 right-0 w-full md:w-80 md:h-auto md:top-24 md:bottom-4 md:right-4 bg-[#1a1a1e] md:border-2 border-l border-gray-800 md:border-dashed md:border-gray-700 md:rounded-2xl p-4 flex flex-col shadow-2xl z-[60] transform translate-x-full md:translate-x-0" aria-label="Carrito de compra">
-        
-        <div class="flex justify-between items-center md:hidden border-b border-gray-800 pb-4 mb-4 pt-2">
+    <aside id="drop-zone" class="cart-drawer fixed inset-y-0 right-0 w-full md:w-80 md:h-auto md:top-24 md:bottom-4 md:right-4 bg-[#1a1a1e] md:border-2 border-l border-gray-700 md:border-dashed md:rounded-2xl p-4 flex flex-col shadow-2xl z-[60] transform translate-x-full md:translate-x-0" aria-label="Carrito de compra">
+        <div class="flex justify-between items-center md:hidden border-b border-gray-700 pb-4 mb-4 pt-2">
             <h3 class="font-bold text-white text-lg flex items-center gap-2">
-                <i class="fas fa-shopping-cart text-blue-500"></i> Tu Carrito
+                <i class="fas fa-shopping-cart text-blue-400"></i> Tu Carrito
             </h3>
             <button onclick="toggleCart()" aria-label="Cerrar carrito" class="w-8 h-8 flex items-center justify-center bg-gray-800 rounded-full text-white">
                 <i class="fas fa-times" aria-hidden="true"></i>
             </button>
         </div>
-
         <div class="text-center border-b border-gray-700 pb-3 mb-3 hidden md:block">
-            <i class="fas fa-shopping-cart text-3xl text-blue-500 mb-2" aria-hidden="true"></i>
+            <i class="fas fa-shopping-cart text-3xl text-blue-400 mb-2" aria-hidden="true"></i>
             <h3 class="font-bold text-white">Carrito de Compra</h3>
             <p id="empty-msg" class="text-xs text-gray-400 mt-1">Arrastra libros aquí para añadir</p>
         </div>
-
         <div id="cart-list" class="flex-1 overflow-y-auto space-y-2 hidden custom-scrollbar pb-2"></div>
-        
         <div id="empty-msg-mobile" class="md:hidden flex-1 flex flex-col items-center justify-center text-gray-500 opacity-50">
             <i class="fas fa-shopping-basket text-4xl mb-2"></i>
             <p>Tu carrito está vacío</p>
         </div>
-
         <div id="cart-actions" class="mt-auto hidden border-t border-gray-700 pt-3 pb-safe">
             <div class="flex justify-between text-sm font-bold mb-3 px-1">
                 <span>Total:</span>
@@ -227,17 +369,17 @@
     </aside>
 
     <div id="product-modal" class="fixed inset-0 z-[70] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" aria-modal="true" role="dialog" aria-labelledby="modal-title">
-        <div class="bg-[#1a1a1e] border border-gray-700 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-2xl relative flex flex-col md:flex-row animate-[fadeIn_0.3s]">
-            <button onclick="closeModal('product-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-white z-10 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center" aria-label="Cerrar">
+        <div class="bg-[#1a1a1e] border border-gray-600 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-2xl relative flex flex-col md:flex-row animate-[fadeIn_0.3s]">
+            <button onclick="closeModal('product-modal')" class="absolute top-4 right-4 text-gray-300 hover:text-white z-10 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center" aria-label="Cerrar">
                 <i class="fas fa-times" aria-hidden="true"></i>
             </button>
             <div class="md:w-2/5 h-64 md:h-auto bg-gray-800 relative group">
                 <img id="modal-img" src="" alt="" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition">
             </div>
             <div class="md:w-3/5 p-6 md:p-8 flex flex-col">
-                <span class="text-blue-500 font-bold text-[10px] uppercase tracking-widest mb-2">Libro Seleccionado</span>
+                <span class="text-blue-400 font-bold text-[10px] uppercase tracking-widest mb-2">Libro Seleccionado</span>
                 <h2 id="modal-title" class="text-2xl font-black mb-1 text-white leading-tight">Título</h2>
-                <p id="modal-author" class="text-gray-400 text-sm mb-6 font-medium italic"></p>
+                <p id="modal-author" class="text-gray-300 text-sm mb-6 font-medium italic"></p>
                 <div class="mt-auto pt-6 border-t border-gray-700">
                     <div class="flex items-center justify-between gap-4">
                         <span class="text-3xl font-bold text-white">9.95€</span>
@@ -249,8 +391,8 @@
     </div>
 
     <div id="admin-modal" class="fixed inset-0 z-[80] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4" aria-modal="true" role="dialog">
-        <div class="bg-[#1a1a1e] w-full max-w-lg rounded-3xl border border-yellow-600/30 shadow-2xl p-6 md:p-8 relative animate-[fadeIn_0.3s] max-h-[90vh] overflow-y-auto">
-            <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition" aria-label="Cerrar">
+        <div class="bg-[#1a1a1e] w-full max-w-lg rounded-3xl border border-yellow-600/50 shadow-2xl p-6 md:p-8 relative animate-[fadeIn_0.3s] max-h-[90vh] overflow-y-auto">
+            <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-300 hover:text-white transition" aria-label="Cerrar">
                 <i class="fas fa-times text-xl" aria-hidden="true"></i>
             </button>
             <h2 id="admin-modal-title" class="text-2xl font-black text-white mb-6 border-l-4 border-yellow-500 pl-4">Gestión de Libro</h2>
@@ -258,35 +400,99 @@
             <form id="admin-form" onsubmit="handleSaveBook(event)" class="space-y-4">
                 <input type="hidden" id="edit-book-id">
                 <div>
-                    <label for="edit-title" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Título</label>
-                    <input type="text" id="edit-title" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                    <label for="edit-title" class="text-xs font-bold text-gray-300 uppercase ml-1 block mb-1">Título</label>
+                    <input type="text" id="edit-title" required class="w-full bg-black/50 border border-gray-600 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition placeholder-gray-400">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="edit-author" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Autor</label>
-                        <input type="text" id="edit-author" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                        <label for="edit-author" class="text-xs font-bold text-gray-300 uppercase ml-1 block mb-1">Autor</label>
+                        <input type="text" id="edit-author" required class="w-full bg-black/50 border border-gray-600 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition placeholder-gray-400">
                     </div>
                     <div>
-                        <label for="edit-price" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Precio (€)</label>
-                        <input type="number" step="0.01" id="edit-price" required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                        <label for="edit-price" class="text-xs font-bold text-gray-300 uppercase ml-1 block mb-1">Precio (€)</label>
+                        <input type="number" step="0.01" id="edit-price" required class="w-full bg-black/50 border border-gray-600 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition placeholder-gray-400">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="edit-category" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">Categoría</label>
-                        <select id="edit-category" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                        <label for="edit-category" class="text-xs font-bold text-gray-300 uppercase ml-1 block mb-1">Categoría</label>
+                        <select id="edit-category" class="w-full bg-black/50 border border-gray-600 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
                             <option value="">Cargando...</option>
                         </select>
                     </div>
                     <div>
-                        <label for="edit-cover" class="text-xs font-bold text-gray-400 uppercase ml-1 block mb-1">URL Portada</label>
-                        <input type="url" id="edit-cover" placeholder="http://..." required class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition">
+                        <label for="edit-cover" class="text-xs font-bold text-gray-300 uppercase ml-1 block mb-1">URL Portada</label>
+                        <input type="url" id="edit-cover" placeholder="http://..." required class="w-full bg-black/50 border border-gray-600 rounded-xl p-3 text-white focus:border-yellow-500 outline-none transition placeholder-gray-400">
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-4 rounded-xl shadow-lg shadow-yellow-600/20 mt-6 transition">
+                <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-lg shadow-yellow-600/20 mt-6 transition">
                     <i class="fas fa-save mr-2" aria-hidden="true"></i> Guardar Cambios
                 </button>
             </form>
+        </div>
+    </div>
+
+    <div id="video-modal" class="fixed inset-0 z-[90] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4" aria-modal="true" role="dialog" aria-labelledby="video-title">
+        <div class="bg-[#1a1a1e] w-full max-w-3xl rounded-3xl border border-blue-500/30 shadow-2xl overflow-hidden relative animate-[fadeIn_0.3s]">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-[#151518]">
+                <h2 id="video-title" class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-video text-blue-400" aria-hidden="true"></i> Cómo usar eBookStore
+                </h2>
+                <button onclick="closeVideoModal()" class="text-gray-300 hover:text-white transition bg-gray-800 hover:bg-gray-700 w-8 h-8 rounded-full flex items-center justify-center" aria-label="Cerrar vídeo">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="relative bg-black aspect-video w-full">
+                <video id="app-tutorial-video" controls preload="metadata" class="w-full h-full object-contain">
+                    <source src="assets/video/tutorial.mp4" type="video/mp4">
+                    <track label="Español" kind="subtitles" srclang="es" src="assets/video/subtitulos.vtt" default>
+                    Tu navegador no soporta la reproducción de video.
+                </video>
+            </div>
+            <div class="p-6 bg-[#1a1a1e]">
+                <h3 class="text-sm font-bold text-gray-200 uppercase mb-2">Resumen del video:</h3>
+                <p class="text-sm text-gray-300">
+                    Tutorial completo: Creación de reseña, registro de usuario, uso del buscador, proceso de compra, tablero Kanban, perfil de usuario, panel de administración y vista móvil accesible.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-dialog" title="Centro de Ayuda" style="display:none;">
+        <div id="help-tabs">
+            <ul>
+                <li><a href="#tab-news">📢 Novedades</a></li>
+                <li><a href="#tab-faq">❓ Preguntas</a></li>
+                <li><a href="#tab-contact">✉️ Contacto</a></li>
+            </ul>
+            <div id="tab-news">
+                <h3 class="font-bold text-blue-300 mb-2">Versión 1.0 Lanzada</h3>
+                <p class="text-sm text-gray-200 mb-3">¡Bienvenido a la nueva eBookStore! Hemos añadido:</p>
+                <ul class="list-disc list-inside text-xs text-gray-300 space-y-1">
+                    <li>Búsqueda global con OpenLibrary.</li>
+                    <li>Tablero Kanban para organizar lecturas.</li>
+                    <li>Modo oscuro nativo.</li>
+                </ul>
+            </div>
+            <div id="tab-faq">
+                <div class="space-y-3">
+                    <div>
+                        <p class="font-bold text-sm text-white">¿Cómo leo un libro?</p>
+                        <p class="text-xs text-gray-300">Ve a "Mis Libros" y pulsa el botón "Leer".</p>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm text-white">¿Es gratis?</p>
+                        <p class="text-xs text-gray-300">Sí, utilizamos el catálogo de dominio público.</p>
+                    </div>
+                </div>
+            </div>
+            <div id="tab-contact">
+                <p class="text-sm text-gray-200 mb-2">¿Tienes problemas? Escríbenos:</p>
+                <div class="bg-black/30 p-3 rounded text-center border border-gray-600">
+                    <p class="text-blue-300 font-mono text-sm">soporte@ebookstore.com</p>
+                </div>
+                <button onclick="$('#help-dialog').dialog('close')" class="mt-4 w-full bg-red-600/30 text-red-300 border border-red-600/50 py-2 rounded hover:bg-red-600/50 transition">Cerrar Ventana</button>
+            </div>
         </div>
     </div>
 
@@ -296,6 +502,43 @@
     </div>
 
     <script src="dashboard.js"></script>
+    
+    <script>
+        // --- Video Logic ---
+        function openVideoModal() {
+            document.getElementById('video-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('app-tutorial-video').focus(), 100);
+        }
+
+        function closeVideoModal() {
+            const video = document.getElementById('app-tutorial-video');
+            if(video) video.pause();
+            document.getElementById('video-modal').classList.add('hidden');
+        }
+
+        // --- jQuery UI Tabs Logic ---
+        $(document).ready(function() {
+            // Inicializar Tabs
+            $("#help-tabs").tabs({
+                show: { effect: "fadeIn", duration: 200 }
+            });
+
+            // Inicializar Modal Dialog
+            $("#help-dialog").dialog({
+                autoOpen: false,
+                modal: true,
+                width: 500,
+                show: { effect: "blind", duration: 300 },
+                hide: { effect: "explode", duration: 300 },
+                classes: { "ui-dialog": "rounded-2xl overflow-hidden shadow-2xl border border-gray-600" }
+            });
+
+            // Abrir al hacer clic en el botón Desktop O Móvil
+            $("#btn-open-help, #btn-open-help-mobile").on("click", function() {
+                $("#help-dialog").dialog("open");
+            });
+        });
+    </script>
 
 </body> 
 </html>
