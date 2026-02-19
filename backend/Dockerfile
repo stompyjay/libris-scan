@@ -47,4 +47,4 @@ EXPOSE 80
 # 2. Le da permisos para que nadie se queje
 # 3. Crea las tablas (migrate)
 # 4. Arranca el servidor
-CMD sh -c "touch /var/www/database/database.sqlite && chmod 777 /var/www/database/database.sqlite && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=80"
+CMD sh -c "touch /var/www/database/database.sqlite && chmod 777 /var/www/database/database.sqlite && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=9000"
